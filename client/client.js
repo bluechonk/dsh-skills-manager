@@ -3,7 +3,7 @@
 // 职责（单文件）：设置页「模型」下方的「技能」分区（settings.section order 11）——
 //   作用域下拉（用户·本机 / 各工作区）+ 技能计数 + 搜索框；
 //   「已安装」分组（可管理：模型调用开关、删除、打开目录）+ 「内置」只读分组；
-//   技能详情弹窗（描述 / 范围 / 状态 / 文件路径 + 正文预览）；
+//   技能详情弹窗（描述 / 范围 / 状态 / 文件路径，描述按 Markdown 渲染）；
 //   「导入外部 Agent 技能」弹窗（外部目录发现、软链或复制、导入到全局或项目）；
 //   「新建」弹窗（生成最小可用技能目录）。
 //
@@ -38,7 +38,7 @@ window.__ModuleLoader__.load({
       ".dsm-divider{width:1px;height:20px;background:var(--dsw-alias-border-l1);flex:none}",
       ".dsm-meta{color:var(--dsw-alias-label-secondary);font-size:13.5px;white-space:nowrap}",
       ".dsm-meta b{font-weight:600;color:var(--dsw-alias-label-primary)}",
-      ".dsm-searchWrap{margin-left:auto;position:relative;display:flex;align-items:center;min-width:220px;max-width:340px;flex:1}",
+      ".dsm-searchWrap{margin-left:auto;position:relative;display:flex;align-items:center;min-width:160px;max-width:340px;flex:1}",
       ".dsm-searchWrap svg{position:absolute;left:10px;pointer-events:none;color:var(--dsw-alias-label-secondary)}",
       ".dsm-search{width:100%;height:34px;padding:0 12px 0 32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;outline:none}",
       ".dsm-search:focus{border-color:var(--dsw-alias-brand-primary)}",
@@ -73,15 +73,17 @@ window.__ModuleLoader__.load({
       ".dsm-trash:hover{color:var(--dsw-alias-state-error-primary);background:var(--dsw-alias-bg-layer-2)}",
       ".dsm-groupTitle{padding:10px 4px 6px;font-size:12.5px;color:var(--dsw-alias-label-secondary);font-weight:600}",
       // —— 下拉菜单 ——
-      ".dsm-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;min-width:230px;padding:6px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:2px}",
+      ".dsm-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;min-width:230px;padding:6px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent);display:flex;flex-direction:column;gap:2px}",
       ".dsm-menuRight{left:auto;right:0}",
+      // 向上展开：弹窗底部的下拉菜单否则会落在弹窗外并被 overflow 裁掉。
+      ".dsm-menuUp{top:auto;bottom:calc(100% + 6px)}",
       ".dsm-menuItem{display:flex;align-items:center;gap:10px;padding:8px 10px;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;text-align:left;cursor:pointer;width:100%}",
       ".dsm-menuItem:hover{background:var(--dsw-alias-bg-layer-2)}",
       ".dsm-menuItem span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-menuLabel{padding:8px 10px 4px;color:var(--dsw-alias-label-secondary);font-size:12px}",
       // —— 弹窗 ——
-      ".dsm-overlay{position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px}",
-      ".dsm-modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 24px 64px rgba(0,0,0,.4);overflow:hidden}",
+      ".dsm-overlay{position:fixed;inset:0;z-index:60;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);padding:24px}",
+      ".dsm-modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 24px 64px color-mix(in srgb, var(--dsw-alias-label-primary) 28%, transparent);overflow:hidden}",
       ".dsm-modalHead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--dsw-alias-border-l1)}",
       ".dsm-modalTitle{font-size:15px;font-weight:600}",
       ".dsm-modalBody{padding:16px 18px 20px;overflow:auto;display:flex;flex-direction:column;gap:10px}",
@@ -98,10 +100,11 @@ window.__ModuleLoader__.load({
       ".dsm-md-pre{margin:0 0 8px;padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);overflow:auto;white-space:pre}",
       ".dsm-md-pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}",
       ".dsm-md-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;padding:1px 4px;border-radius:4px;background:var(--dsw-alias-bg-layer-2)}",
-      ".dsm-md-p a,.dsm-md-list a{color:var(--dsw-alias-brand-primary)}",
+      ".dsm-md-p a,.dsm-md-list a,.dsm-md-h a,.dsm-md-quote a{color:var(--dsw-alias-brand-primary)}",
       ".dsm-md-hr{border:0;border-top:1px solid var(--dsw-alias-border-l1);margin:10px 0}",
       ".dsm-muted{color:var(--dsw-alias-label-secondary)}",
       ".dsm-twoCol{display:grid;grid-template-columns:1fr 1fr;gap:16px}",
+      "@media (max-width:520px){.dsm-twoCol{grid-template-columns:1fr}}",
       ".dsm-value{font-size:13.5px;margin-top:4px}",
       ".dsm-pathRow{display:flex;align-items:center;gap:6px;margin-top:2px;min-width:0}",
       ".dsm-path{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -117,7 +120,7 @@ window.__ModuleLoader__.load({
       ".dsm-sourceRow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;cursor:pointer}",
       ".dsm-sourceRow:hover{background:var(--dsw-alias-bg-layer-2)}",
       ".dsm-sourceMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
-      ".dsm-sourceName{font-size:13.5px;font-weight:600}",
+      ".dsm-sourceName{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-sourcePath{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-sourceCount{color:var(--dsw-alias-label-secondary);font-size:12.5px;white-space:nowrap}",
       ".dsm-importFoot{display:flex;align-items:center;gap:10px;padding:12px 18px;border-top:1px solid var(--dsw-alias-border-l1)}",
@@ -139,7 +142,8 @@ window.__ModuleLoader__.load({
     /** 注入样式（按 data-plugin-css 去重，热重载原位替换）。 */
     function ensureStyles() {
       if (typeof document === "undefined") return;
-      const id = "dsh-skills-manager";
+      // id 用包名：避免与其它插件的 data-plugin-css 撞名互相覆盖。
+      const id = "@bluechonk/dsh-skills-manager";
       let style = document.querySelector('style[data-plugin-css="' + id + '"]');
       if (!style) {
         style = document.createElement("style");
@@ -173,44 +177,55 @@ window.__ModuleLoader__.load({
     const IconLayers = (p) => h(Svg, p, h("rect", { x: 4, y: 4, width: 12, height: 12, rx: 2 }), h("path", { d: "M9 20h9a2 2 0 0 0 2-2V9" }));
 
     /* ---------------------------------------------------------------- */
-    /* Markdown 渲染（零依赖的常用子集）                                    */
+    /* Markdown：纯解析（可单测）+ React 渲染                              */
     /* ---------------------------------------------------------------- */
 
-    /** 行内标记：行内代码、**粗体**、*斜体*、~~删除线~~、[链接](url)。 */
-    function renderInline(text) {
+    /** 允许的链接协议：其余（javascript:、data: 等）一律降级为纯文本。 */
+    const SAFE_LINK = /^(?:https?:|mailto:|tel:|#|\/)/i;
+
+    /**
+     * 行内标记解析（纯函数，不依赖 React）：行内代码、**粗体**、*斜体*、~~删除线~~、[链接](url)。
+     * @returns {Array<{ type: string, text: string, href?: string }>}
+     */
+    function parseInline(text) {
       const nodes = [];
-      const pattern = /(`[^`]+`)|(\*\*[^*]+\*\*)|(~~[^~]+~~)|(\[[^\]]+\]\([^)]+\))|(\*[^*\n]+\*)/g;
+      const source = String(text == null ? "" : text);
+      const pattern = /(`[^`]+`)|(\*\*[^*]+?\*\*)|(~~[^~]+?~~)|(\[[^\]\n]*?\]\([^)\s]*?\))|(\*[^*\s][^*\n]*?\*)/g;
       let last = 0;
       let match;
-      let key = 0;
-      const source = String(text == null ? "" : text);
       while ((match = pattern.exec(source)) !== null) {
-        if (match.index > last) nodes.push(source.slice(last, match.index));
+        if (match.index > last) nodes.push({ type: "text", text: source.slice(last, match.index) });
         const token = match[0];
         if (token.startsWith("`")) {
-          nodes.push(h("code", { key: "i" + (key++), className: "dsm-md-code" }, token.slice(1, -1)));
+          nodes.push({ type: "code", text: token.slice(1, -1) });
         } else if (token.startsWith("**")) {
-          nodes.push(h("strong", { key: "i" + (key++) }, token.slice(2, -2)));
+          nodes.push({ type: "strong", text: token.slice(2, -2) });
         } else if (token.startsWith("~~")) {
-          nodes.push(h("del", { key: "i" + (key++) }, token.slice(2, -2)));
+          nodes.push({ type: "del", text: token.slice(2, -2) });
         } else if (token.startsWith("[")) {
-          const link = /\[([^\]]+)\]\(([^)]+)\)/.exec(token);
-          nodes.push(h("a", { key: "i" + (key++), href: link[2], target: "_blank", rel: "noreferrer" }, link[1]));
+          const link = /\[([^\]]*)\]\(([^)]*)\)/.exec(token);
+          const label = link ? link[1] : token;
+          const href = link ? link[2].trim() : "";
+          // 非白名单协议（如 javascript:）不生成可点链接，只当普通文本。
+          if (SAFE_LINK.test(href)) nodes.push({ type: "link", text: label, href });
+          else nodes.push({ type: "text", text: token });
         } else {
-          nodes.push(h("em", { key: "i" + (key++) }, token.slice(1, -1)));
+          nodes.push({ type: "em", text: token.slice(1, -1) });
         }
         last = match.index + token.length;
       }
-      if (last < source.length) nodes.push(source.slice(last));
+      if (last < source.length) nodes.push({ type: "text", text: source.slice(last) });
       return nodes;
     }
 
-    /** 块级 Markdown：代码块、标题、分隔线、引用、有序/无序列表、段落。 */
-    function renderMarkdown(text) {
+    /**
+     * 块级 Markdown 解析（纯函数，不依赖 React）：代码块、标题、分隔线、引用、有序/无序列表、段落。
+     * @returns {Array<{ type: string, level?: number, text?: string, items?: string[], children?: any[] }>}
+     */
+    function parseMarkdown(text) {
       const lines = String(text == null ? "" : text).replace(/\r\n/g, "\n").split("\n");
-      const out = [];
+      const blocks = [];
       let i = 0;
-      let key = 0;
       while (i < lines.length) {
         const line = lines[i];
         if (line.trim() === "") { i += 1; continue; }
@@ -223,19 +238,19 @@ window.__ModuleLoader__.load({
             i += 1;
           }
           i += 1;
-          out.push(h("pre", { key: "b" + (key++), className: "dsm-md-pre" }, h("code", null, buffer.join("\n"))));
+          blocks.push({ type: "code", text: buffer.join("\n") });
           continue;
         }
 
         const heading = /^(#{1,6})\s+(.*)$/.exec(line);
         if (heading) {
-          out.push(h("h" + heading[1].length, { key: "b" + (key++), className: "dsm-md-h" }, renderInline(heading[2])));
+          blocks.push({ type: "h", level: heading[1].length, text: heading[2] });
           i += 1;
           continue;
         }
 
         if (/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-          out.push(h("hr", { key: "b" + (key++) }));
+          blocks.push({ type: "hr" });
           i += 1;
           continue;
         }
@@ -246,7 +261,7 @@ window.__ModuleLoader__.load({
             buffer.push(lines[i].replace(/^\s*>\s?/, ""));
             i += 1;
           }
-          out.push(h("blockquote", { key: "b" + (key++), className: "dsm-md-quote" }, renderMarkdown(buffer.join("\n"))));
+          blocks.push({ type: "quote", children: parseMarkdown(buffer.join("\n")) });
           continue;
         }
 
@@ -256,45 +271,110 @@ window.__ModuleLoader__.load({
           while (i < lines.length) {
             const item = isOrdered ? /^\s*\d+[.)]\s+(.*)$/.exec(lines[i]) : /^\s*[-*+]\s+(.*)$/.exec(lines[i]);
             if (!item) break;
-            items.push(h("li", { key: "li" + (key++) }, renderInline(item[1])));
+            items.push(item[1]);
             i += 1;
           }
-          out.push(h(isOrdered ? "ol" : "ul", { key: "b" + (key++), className: "dsm-md-list" }, items));
+          blocks.push({ type: isOrdered ? "ol" : "ul", items });
           continue;
         }
 
         const buffer = [];
-        while (i < lines.length && lines[i].trim() !== "" && !/^```/.test(lines[i].trim()) && !/^\s*[-*+]\s+/.test(lines[i]) && !/^\s*\d+[.)]\s+/.test(lines[i]) && !/^#{1,6}\s/.test(lines[i]) && !/^\s*>\s?/.test(lines[i]) && !/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i])) {
+        while (
+          i < lines.length
+          && lines[i].trim() !== ""
+          && !/^```/.test(lines[i].trim())
+          && !/^\s*[-*+]\s+/.test(lines[i])
+          && !/^\s*\d+[.)]\s+/.test(lines[i])
+          && !/^#{1,6}\s/.test(lines[i])
+          && !/^\s*>\s?/.test(lines[i])
+          && !/^\s*(-{3,}|\*{3,}|_{3,})\s*$/.test(lines[i])
+        ) {
           buffer.push(lines[i]);
           i += 1;
         }
         if (buffer.length === 0) { i += 1; continue; }
-        out.push(h("p", { key: "b" + (key++), className: "dsm-md-p" }, renderInline(buffer.join("\n"))));
+        blocks.push({ type: "p", text: buffer.join("\n") });
       }
-      return out;
+      return blocks;
+    }
+
+    /** 行内节点 → React 节点。 */
+    function renderInline(nodes, keyPrefix) {
+      return nodes.map((node, index) => {
+        const key = keyPrefix + index;
+        if (node.type === "code") return h("code", { key, className: "dsm-md-code" }, node.text);
+        if (node.type === "strong") return h("strong", { key }, node.text);
+        if (node.type === "em") return h("em", { key }, node.text);
+        if (node.type === "del") return h("del", { key }, node.text);
+        if (node.type === "link") return h("a", { key, href: node.href, target: "_blank", rel: "noreferrer noopener" }, node.text);
+        return node.text;
+      });
+    }
+
+    /** 块 → React 元素。 */
+    function renderBlocks(blocks, keyPrefix) {
+      const prefix = keyPrefix || "b";
+      return blocks.map((block, index) => {
+        const key = prefix + index;
+        if (block.type === "code") return h("pre", { key, className: "dsm-md-pre" }, h("code", null, block.text));
+        if (block.type === "h") return h("h" + block.level, { key, className: "dsm-md-h" }, renderInline(parseInline(block.text), key + "i"));
+        if (block.type === "hr") return h("hr", { key, className: "dsm-md-hr" });
+        if (block.type === "quote") return h("blockquote", { key, className: "dsm-md-quote" }, renderBlocks(block.children, key + "c"));
+        if (block.type === "ul" || block.type === "ol") {
+          return h(block.type, { key, className: "dsm-md-list" }, block.items.map((item, position) => h("li", { key: key + "l" + position }, renderInline(parseInline(item), key + "l" + position + "i"))));
+        }
+        return h("p", { key, className: "dsm-md-p" }, renderInline(parseInline(block.text), key + "i"));
+      });
+    }
+
+    /** 对外：Markdown 文本 → React 节点。 */
+    function renderMarkdown(text) {
+      return renderBlocks(parseMarkdown(text), "b");
     }
 
     /* ---------------------------------------------------------------- */
     /* 数据访问                                                          */
     /* ---------------------------------------------------------------- */
 
+    /** 请求超时上限：宿主卡住时不让界面永远停在「加载中」。 */
+    const REQUEST_TIMEOUT_MS = 10000;
+
     async function apiGet(path, params) {
       const query = params ? "?" + new URLSearchParams(params).toString() : "";
-      const response = await fetch(API + path + query, { headers: { accept: "application/json" } });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
-      return payload;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(API + path + query, { headers: { accept: "application/json" }, signal: controller.signal });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
+        return payload;
+      } catch (error) {
+        if (error && error.name === "AbortError") throw new Error("请求超时（10 秒），宿主无响应");
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     async function apiPost(path, body) {
-      const response = await fetch(API + path, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(body || {}),
-      });
-      const payload = await response.json().catch(() => ({}));
-      if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
-      return payload;
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+      try {
+        const response = await fetch(API + path, {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify(body || {}),
+          signal: controller.signal,
+        });
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
+        return payload;
+      } catch (error) {
+        if (error && error.name === "AbortError") throw new Error("请求超时（10 秒），宿主无响应");
+        throw error;
+      } finally {
+        clearTimeout(timer);
+      }
     }
 
     /* ---------------------------------------------------------------- */
@@ -333,31 +413,62 @@ window.__ModuleLoader__.load({
         const onDown = (event) => {
           if (ref.current && !ref.current.contains(event.target)) setOpen(false);
         };
+        const onKey = (event) => {
+          if (event.key === "Escape") {
+            event.stopPropagation();
+            setOpen(false);
+          }
+        };
         document.addEventListener("mousedown", onDown);
-        return () => document.removeEventListener("mousedown", onDown);
+        document.addEventListener("keydown", onKey);
+        return () => {
+          document.removeEventListener("mousedown", onDown);
+          document.removeEventListener("keydown", onKey);
+        };
       }, [open]);
+      const menuClass = "dsm-menu" + (props.menuUp ? " dsm-menuUp" : "") + (props.menuRight ? " dsm-menuRight" : "");
       return h("div", { className: props.className || "dsm-select", ref: ref },
         h("button", {
           type: "button",
           className: props.buttonClassName || "dsm-selectBtn",
           onClick: () => setOpen((value) => !value),
-          "aria-haspopup": "listbox",
+          "aria-haspopup": "menu",
           "aria-expanded": open ? "true" : "false",
-        }, props.trigger, h(IconCaret, null)),
-        open ? h("div", { className: "dsm-menu" + (props.menuRight ? " dsm-menuRight" : "") }, props.children(open ? () => setOpen(false) : () => {})) : null,
+        }, props.trigger, props.hideCaret ? null : h(IconCaret, null)),
+        open ? h("div", { className: menuClass, role: "menu" }, props.children(open ? () => setOpen(false) : () => {})) : null,
       );
     }
 
     function Modal(props) {
+      const ref = useRef(null);
+      const restoreRef = useRef(null);
       useEffect(() => {
-        const onKey = (event) => { if (event.key === "Escape") props.onClose(); };
+        restoreRef.current = document.activeElement;
+        if (ref.current) ref.current.focus();
+        const onKey = (event) => {
+          if (event.key !== "Escape") return;
+          // 只关自己：别把宿主设置面板一起关掉。
+          event.stopPropagation();
+          props.onClose();
+        };
         document.addEventListener("keydown", onKey);
-        return () => document.removeEventListener("keydown", onKey);
+        return () => {
+          document.removeEventListener("keydown", onKey);
+          const restore = restoreRef.current;
+          if (restore && typeof restore.focus === "function") restore.focus();
+        };
       }, [props.onClose]);
       return h("div", {
         className: "dsm-overlay",
         onMouseDown: (event) => { if (event.target === event.currentTarget) props.onClose(); },
-      }, h("div", { className: "dsm-modal" + (props.modalClassName ? " " + props.modalClassName : ""), role: "dialog", "aria-modal": "true" }, props.children));
+      }, h("div", {
+        className: "dsm-modal" + (props.modalClassName ? " " + props.modalClassName : ""),
+        role: "dialog",
+        "aria-modal": "true",
+        "aria-label": props.label || "对话框",
+        tabIndex: -1,
+        ref: ref,
+      }, props.children));
     }
 
     /* ---------------------------------------------------------------- */
@@ -380,10 +491,12 @@ window.__ModuleLoader__.load({
       const skill = props.skill;
       const [detail, setDetail] = useState(null);
       const [error, setError] = useState(null);
+      const [copied, setCopied] = useState(null);
       useEffect(() => {
         let alive = true;
         setDetail(null);
         setError(null);
+        setCopied(null);
         apiPost("/body", { name: skill.name, cwd: props.cwd })
           .then((payload) => { if (alive) setDetail(payload); })
           .catch((err) => { if (alive) setError(String(err && err.message ? err.message : err)); });
@@ -392,7 +505,15 @@ window.__ModuleLoader__.load({
 
       const copyPath = () => {
         const path = (detail && detail.skill && detail.skill.path) || skill.path || "";
-        if (path && navigator.clipboard) navigator.clipboard.writeText(path);
+        if (!path) return;
+        // 剪贴板可能不可用（非安全上下文）或被拒绝：给出反馈，不要静默失败。
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(path)
+            .then(() => setCopied(true))
+            .catch(() => setCopied(false));
+          return;
+        }
+        setCopied(false);
       };
 
       const scopeText = scopeTextOf(skill);
@@ -401,7 +522,7 @@ window.__ModuleLoader__.load({
         ? detail.frontmatter.description
         : skill.description || "";
 
-      return h(Modal, { onClose: props.onClose },
+      return h(Modal, { onClose: props.onClose, label: skill.name + " 详情" },
         h("div", { className: "dsm-modalHead" },
           h("span", { className: "dsm-modalTitle" }, skill.name),
           h("div", { style: { marginLeft: "auto" } },
@@ -427,7 +548,7 @@ window.__ModuleLoader__.load({
           h("div", { className: "dsm-label" }, "文件路径"),
           h("div", { className: "dsm-pathRow" },
             h("code", { className: "dsm-path", title: skill.path || "" }, skill.path || "（内置技能，无本地文件）"),
-            IconButton({ className: "dsm-iconBtnSm", label: "复制路径", onClick: copyPath }, h(IconCopy, null)),
+            IconButton({ className: "dsm-iconBtnSm", label: copied === null ? "复制路径" : copied ? "已复制" : "复制失败", onClick: copyPath }, h(IconCopy, null)),
           ),
         ),
       );
@@ -442,38 +563,58 @@ window.__ModuleLoader__.load({
       const [error, setError] = useState(null);
       const [selected, setSelected] = useState(() => new Set());
       const [mode, setMode] = useState("link");
-      const [target, setTarget] = useState(props.scopeKind === "project" ? "project" : "global");
+      // 只有作用域本身就是工作区时才允许「导入到项目」——否则宿主会落到全局根，
+      // 按钮却写着「导入到项目」，用户以为装到了项目里。
+      const canProject = Boolean(props.cwd);
+      const [target, setTarget] = useState(props.scopeKind === "project" && props.cwd ? "project" : "global");
       const [busy, setBusy] = useState(false);
       const [result, setResult] = useState(null);
 
       const load = useCallback(() => {
+        let alive = true;
         setError(null);
         apiGet("/external")
-          .then((payload) => { setData(payload); setSelected(new Set()); })
-          .catch((err) => setError(String(err && err.message ? err.message : err)));
+          .then((payload) => { if (!alive) return; setData(payload); setSelected(new Set()); })
+          .catch((err) => { if (!alive) return; setError(String(err && err.message ? err.message : err)); });
+        return () => { alive = false; };
       }, []);
 
       useEffect(() => { load(); }, [load]);
+      useEffect(() => { if (!canProject) setTarget("global"); }, [canProject]);
 
       const sources = (data && data.sources) || [];
+      // 选择键用「来源::名字」：不同外部目录可能存在同名技能，按名字去重会互相串选。
+      const keyOf = (skill) => skill.source + "::" + skill.name;
       const allSkills = [];
-      for (const source of sources) for (const skill of source.skills) allSkills.push(Object.assign({ source: source.id }, skill));
+      for (const source of sources) {
+        for (const skill of source.skills || []) {
+          // 顺序要紧：宿主返回的技能对象里可能带 source 字段，不能覆盖来源 id。
+          allSkills.push(Object.assign({}, skill, { source: source.id, installed: Boolean(skill.installed) }));
+        }
+      }
+      const importable = allSkills.filter((skill) => !skill.installed);
 
-      const toggleOne = (skill) => {
+      const allChecked = importable.length > 0 && importable.every((skill) => selected.has(keyOf(skill)));
+      const toggleAll = () => {
         setSelected((previous) => {
-          const next = new Set(previous);
-          if (next.has(skill.name)) next.delete(skill.name);
-          else next.add(skill.name);
+          const all = importable.every((skill) => previous.has(keyOf(skill)));
+          if (all) return new Set();
+          const next = new Set();
+          for (const skill of importable) next.add(keyOf(skill));
           return next;
         });
       };
 
-      const allChecked = allSkills.length > 0 && allSkills.every((skill) => selected.has(skill.name));
-      const toggleAll = () => {
+      const toggleSource = (source) => {
+        const items = (source.skills || []).filter((skill) => !skill.installed);
         setSelected((previous) => {
-          if (previous.size === allSkills.length) return new Set();
-          const next = new Set();
-          for (const skill of allSkills) next.add(skill.name);
+          const next = new Set(previous);
+          const allOn = items.length > 0 && items.every((skill) => next.has(keyOf(Object.assign({}, skill, { source: source.id }))));
+          for (const skill of items) {
+            const key = source.id + "::" + skill.name;
+            if (allOn) next.delete(key);
+            else next.add(key);
+          }
           return next;
         });
       };
@@ -481,24 +622,29 @@ window.__ModuleLoader__.load({
       const doImport = async () => {
         setBusy(true);
         setError(null);
-        try {
-          for (const skill of allSkills) {
-            if (!selected.has(skill.name)) continue;
+        setResult(null);
+        let done = 0;
+        const failures = [];
+        // 逐条导入：一条失败不能把后面的选中项一起废掉。
+        for (const skill of importable) {
+          if (!selected.has(keyOf(skill))) continue;
+          try {
             await apiPost("/import", { source: skill.source, name: skill.name, mode, target, cwd: props.cwd });
+            done += 1;
+          } catch (err) {
+            failures.push(skill.name + "：" + String(err && err.message ? err.message : err));
           }
-          setResult("已导入 " + selected.size + " 个技能");
-          load();
-          props.onImported();
-        } catch (err) {
-          setError(String(err && err.message ? err.message : err));
-        } finally {
-          setBusy(false);
         }
+        setResult("已导入 " + done + " 个技能" + (failures.length > 0 ? "，失败 " + failures.length + " 个" : ""));
+        if (failures.length > 0) setError(failures.join("；"));
+        setBusy(false);
+        load();
+        props.onImported();
       };
 
       const targetLabel = target === "project" ? "导入到项目" : "导入到全局";
 
-      return h(Modal, { onClose: props.onClose, modalClassName: "dsm-importModal" },
+      return h(Modal, { onClose: props.onClose, modalClassName: "dsm-importModal", label: "导入外部 Agent 技能" },
         h("div", { className: "dsm-modalHead" },
           h("span", { className: "dsm-modalTitle" }, "导入外部 Agent 技能"),
           h("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" } },
@@ -506,12 +652,14 @@ window.__ModuleLoader__.load({
               buttonClassName: "dsm-selectBtn",
               trigger: h("span", null, target === "project" ? "项目" : "全局"),
               children: (close) => [
-                h("button", { key: "global", type: "button", className: "dsm-menuItem", onClick: () => { setTarget("global"); close(); } },
+                h("button", { key: "global", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setTarget("global"); close(); } },
                   h("span", null, "全局"),
                   target === "global" ? h(IconCheck, null) : null),
-                h("button", { key: "project", type: "button", className: "dsm-menuItem", onClick: () => { setTarget("project"); close(); } },
-                  h("span", null, "项目"),
-                  target === "project" ? h(IconCheck, null) : null),
+                canProject
+                  ? h("button", { key: "project", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setTarget("project"); close(); } },
+                    h("span", null, "项目"),
+                    target === "project" ? h(IconCheck, null) : null)
+                  : null,
               ],
             }),
             IconButton({ className: "dsm-iconBtnSm", label: "重新扫描", onClick: load }, h(IconRefresh, null)),
@@ -521,46 +669,52 @@ window.__ModuleLoader__.load({
         h("div", { className: "dsm-importBody" },
           h("div", { className: "dsm-importCard" },
             h("div", { className: "dsm-selectAll" },
-              h("input", { type: "checkbox", className: "dsm-check", checked: allChecked, onChange: toggleAll }),
+              h("input", { type: "checkbox", className: "dsm-check", checked: allChecked, "aria-label": "全选可导入技能", onChange: toggleAll }),
               h("span", null, "全选"),
-              h("span", { className: "dsm-selCount" }, "已选 " + selected.size + "/" + allSkills.length),
+              h("span", { className: "dsm-selCount" }, "已选 " + selected.size + "/" + importable.length),
             ),
-            sources.map((source) => h("div", { key: source.id, className: "dsm-sourceRow", onClick: () => {
-              const next = new Set(selected);
-              for (const skill of source.skills) {
-                if (next.has(skill.name)) next.delete(skill.name);
-                else next.add(skill.name);
-              }
-              setSelected(next);
-            } },
-              h("input", {
-                type: "checkbox",
-                className: "dsm-check",
-                checked: source.skills.length > 0 && source.skills.every((skill) => selected.has(skill.name)),
-                onClick: (event) => event.stopPropagation(),
-                onChange: () => {},
-              }),
-              h("div", { className: "dsm-sourceMain" },
-                h("div", { className: "dsm-sourceName" }, source.label),
-                h("div", { className: "dsm-sourcePath", title: source.path }, source.path),
-              ),
-              h("div", { className: "dsm-sourceCount" }, source.count + " 个技能"),
-              h(IconChevronRight, null),
-            )),
+            sources.map((source) => {
+              const sourceItems = (source.skills || []).filter((skill) => !skill.installed);
+              const sourceChecked = sourceItems.length > 0 && sourceItems.every((skill) => selected.has(source.id + "::" + skill.name));
+              return h("div", {
+                key: source.id,
+                className: "dsm-sourceRow",
+                role: "button",
+                tabIndex: 0,
+                onClick: () => toggleSource(source),
+                onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSource(source); } },
+              },
+                h("input", {
+                  type: "checkbox",
+                  className: "dsm-check",
+                  checked: sourceChecked,
+                  "aria-label": "选择 " + source.label + " 的全部技能",
+                  onClick: (event) => event.stopPropagation(),
+                  onChange: () => toggleSource(source),
+                }),
+                h("div", { className: "dsm-sourceMain" },
+                  h("div", { className: "dsm-sourceName", title: source.label }, source.label),
+                  h("div", { className: "dsm-sourcePath", title: source.path }, source.path),
+                ),
+                h("div", { className: "dsm-sourceCount" }, source.count + " 个技能"),
+                h(IconChevronRight, null),
+              );
+            }),
           ),
           error ? h("div", { className: "dsm-error" }, error) : null,
           result ? h("div", { className: "dsm-footNote" }, result) : null,
         ),
         h("div", { className: "dsm-importFoot" },
           h("div", { className: "dsm-footLeft" },
-            h("span", null, "发现 " + allSkills.length + " 个可导入技能"),
+            h("span", null, "发现 " + importable.length + " 个可导入技能"),
             h(Dropdown, {
               buttonClassName: "dsm-selectBtn",
+              menuUp: true,
               trigger: h("span", null, mode === "link" ? "软链" : "直接复制"),
               children: (close) => [
-                h("button", { key: "link", type: "button", className: "dsm-menuItem", onClick: () => { setMode("link"); close(); } },
+                h("button", { key: "link", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setMode("link"); close(); } },
                   h("span", null, "软链"), mode === "link" ? h(IconCheck, null) : null),
-                h("button", { key: "copy", type: "button", className: "dsm-menuItem", onClick: () => { setMode("copy"); close(); } },
+                h("button", { key: "copy", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setMode("copy"); close(); } },
                   h("span", null, "直接复制"), mode === "copy" ? h(IconCheck, null) : null),
               ],
             }),
@@ -583,8 +737,12 @@ window.__ModuleLoader__.load({
       const [description, setDescription] = useState("");
       const [error, setError] = useState(null);
       const [busy, setBusy] = useState(false);
+      // 同步锁：busy 是异步生效的，连点两次会发两次请求（第二次 409）。
+      const submitting = useRef(false);
 
       const submit = async () => {
+        if (submitting.current) return;
+        submitting.current = true;
         setBusy(true);
         setError(null);
         try {
@@ -594,6 +752,7 @@ window.__ModuleLoader__.load({
         } catch (err) {
           setError(String(err && err.message ? err.message : err));
         } finally {
+          submitting.current = false;
           setBusy(false);
         }
       };
@@ -606,20 +765,22 @@ window.__ModuleLoader__.load({
         ),
         h("div", { className: "dsm-modalBody" },
           h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, "名称（kebab-case）"),
+            h("div", { className: "dsm-label" }, "名称（kebab-case，仅小写字母、数字与连字符）"),
             h("input", {
               className: "dsm-input",
               value: name,
               placeholder: "my-skill",
+              maxLength: 64,
               onChange: (event) => setName(event.target.value),
             }),
           ),
           h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, "描述"),
+            h("div", { className: "dsm-label" }, "描述（" + description.length + "/500）"),
             h("textarea", {
               className: "dsm-textarea",
               value: description,
               placeholder: "这个技能解决什么问题",
+              maxLength: 500,
               onChange: (event) => setDescription(event.target.value),
             }),
           ),
@@ -638,7 +799,7 @@ window.__ModuleLoader__.load({
     /* 主面板                                                            */
     /* ---------------------------------------------------------------- */
 
-    const WRITABLE_SOURCES = new Set(["user-dsh", "user-agents", "project-dsh", "project-agents"]);
+    const WRITABLE_ROOT_KINDS = new Set(["global", "project", "custom"]);
 
     function Panel() {
       const [state, setState] = useState(null);
@@ -650,27 +811,56 @@ window.__ModuleLoader__.load({
       const [showImport, setShowImport] = useState(false);
       const [showCreate, setShowCreate] = useState(false);
       const [notice, setNotice] = useState(null);
+      const [confirmRemove, setConfirmRemove] = useState(null);
+      // 请求序号：作用域快速切换时，过期响应不得覆盖新数据。
+      const requestSeq = useRef(0);
 
       const cwd = scope.kind === "project" ? scope.path : "";
 
       const load = useCallback(() => {
+        const seq = requestSeq.current + 1;
+        requestSeq.current = seq;
         setLoading(true);
         apiGet("/state", cwd ? { cwd } : {})
-          .then((payload) => { setState(payload); setError(null); })
-          .catch((err) => setError(String(err && err.message ? err.message : err)))
-          .finally(() => setLoading(false));
+          .then((payload) => {
+            if (seq !== requestSeq.current) return;
+            setState(payload);
+            setError(null);
+          })
+          .catch((err) => {
+            if (seq !== requestSeq.current) return;
+            setError(String(err && err.message ? err.message : err));
+          })
+          .finally(() => {
+            if (seq !== requestSeq.current) return;
+            setLoading(false);
+          });
       }, [cwd]);
+
+      // 写操作完成后的刷新必须走「最新」的加载器，不能用点击那一刻闭包里的旧 load()：
+      // 否则作用域切换后，旧闭包会把面板钉回旧作用域，用户按新作用域理解去删技能就可能误删。
+      const loadRef = useRef(load);
+      useEffect(() => { loadRef.current = load; }, [load]);
 
       useEffect(() => { load(); }, [load]);
 
       const skills = (state && state.skills) || [];
       const totals = (state && state.totals) || { skills: 0, installed: 0 };
 
-      const roots = state && state.roots ? state.roots : [];
+      const roots = useMemo(() => (state && state.roots) || [], [state]);
       const rootTitle = useMemo(() => {
         const map = new Map();
         for (const root of roots) map.set(root.label, root.title);
         return map;
+      }, [roots]);
+      // 可写根由宿主给出（root.kind），客户端不再另写一份白名单——
+      // 否则用户自定义目录里的技能会被误判成只读，开关与删除全消失。
+      const writableSources = useMemo(() => {
+        const set = new Set();
+        for (const root of roots) {
+          if (WRITABLE_ROOT_KINDS.has(root.kind)) set.add(root.label);
+        }
+        return set;
       }, [roots]);
 
       const filtered = useMemo(() => {
@@ -681,8 +871,14 @@ window.__ModuleLoader__.load({
         });
       }, [skills, search]);
 
-      const installed = filtered.filter((skill) => WRITABLE_SOURCES.has(skill.source) && skill.exists);
-      const builtin = filtered.filter((skill) => !(WRITABLE_SOURCES.has(skill.source) && skill.exists));
+      const installed = useMemo(
+        () => filtered.filter((skill) => writableSources.has(skill.source) && skill.exists),
+        [filtered, writableSources],
+      );
+      const builtin = useMemo(
+        () => filtered.filter((skill) => !(writableSources.has(skill.source) && skill.exists)),
+        [filtered, writableSources],
+      );
 
       const builtinGroups = useMemo(() => {
         const groups = new Map();
@@ -700,18 +896,18 @@ window.__ModuleLoader__.load({
         setNotice(null);
         try {
           await apiPost("/toggle", { name: skill.name, disabled: !next, cwd });
-          load();
+          loadRef.current();
         } catch (err) {
           setNotice(String(err && err.message ? err.message : err));
         }
       };
 
       const removeSkill = async (skill) => {
-        if (!window.confirm("删除技能「" + skill.name + "」？\n\n将移除：" + (skill.path || "") + "\n\n此操作不可撤销。")) return;
         setNotice(null);
         try {
           await apiPost("/remove", { name: skill.name, cwd });
-          load();
+          setConfirmRemove(null);
+          loadRef.current();
         } catch (err) {
           setNotice(String(err && err.message ? err.message : err));
         }
@@ -727,20 +923,34 @@ window.__ModuleLoader__.load({
       };
 
       const renderRow = (skill) => {
-        const writable = WRITABLE_SOURCES.has(skill.source) && skill.exists;
+        const writable = writableSources.has(skill.source) && skill.exists;
         const enabled = !skill.invocation || skill.invocation.modelInvocable !== false;
-        return h("div", { key: skill.name, className: "dsm-row", onClick: () => setDetail(skill) },
+        return h("div", {
+          key: skill.name,
+          className: "dsm-row",
+          role: "button",
+          tabIndex: 0,
+          onClick: () => setDetail(skill),
+          onKeyDown: (event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              setDetail(skill);
+            }
+          },
+        },
           h("div", { className: "dsm-icon" }, writable ? h(IconSparkle, null) : h(IconLayers, null)),
           h("div", { className: "dsm-rowMain" },
-            h("div", { className: "dsm-name" }, skill.name),
+            h("div", { className: "dsm-name", title: skill.name }, skill.name),
             h("div", { className: "dsm-desc", title: skill.description }, skill.description || "（无描述）"),
           ),
           writable
-            ? h(Switch, { on: enabled, label: "启用模型调用", onChange: (next) => toggleSkill(skill, next) })
+            ? h(Switch, { on: enabled, label: "启用模型调用 " + skill.name, onChange: (next) => toggleSkill(skill, next) })
             : h("span", { className: "dsm-badge" }, "只读"),
           writable
-            ? IconButton({ className: "dsm-trash", label: "删除", onClick: () => removeSkill(skill) }, h(IconTrash, null))
-            : IconButton({ className: "dsm-trash", label: "打开目录", onClick: () => openDirectory(skill) }, h(IconFolder, null)),
+            ? IconButton({ className: "dsm-trash", label: "删除 " + skill.name, onClick: () => setConfirmRemove(skill) }, h(IconTrash, null))
+            : skill.path
+              ? IconButton({ className: "dsm-trash", label: "打开目录 " + skill.name, onClick: () => openDirectory(skill) }, h(IconFolder, null))
+              : null,
         );
       };
 
@@ -790,9 +1000,10 @@ window.__ModuleLoader__.load({
             h(Dropdown, {
               buttonClassName: "dsm-iconBtn",
               trigger: h(IconMore, null),
+              hideCaret: true,
               menuRight: false,
               children: (close) => [
-                h("button", { key: "import", type: "button", className: "dsm-menuItem", onClick: () => { close(); setShowImport(true); } },
+                h("button", { key: "import", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { close(); setShowImport(true); } },
                   h(IconImport, null), h("span", null, "导入")),
               ],
             }),
@@ -803,6 +1014,8 @@ window.__ModuleLoader__.load({
         ),
 
         notice ? h("div", { className: "dsm-error" }, notice) : null,
+        // 刷新失败也要说出来：只在「还没有任何数据」时才显示错误，等于把刷新失败静默吞掉。
+        error && state ? h("div", { className: "dsm-error" }, "刷新失败：" + error) : null,
         state && state.registryError ? h("div", { className: "dsm-footNote" }, "技能注册表暂不可用，当前仅显示本地扫描结果。") : null,
 
         loading && !state
@@ -833,9 +1046,30 @@ window.__ModuleLoader__.load({
           )
           : null,
 
-        detail ? h(DetailModal, { skill: detail, cwd, rootTitle: rootTitle.get(detail.source) || detail.source || "", onClose: () => setDetail(null) }) : null,
-        showImport ? h(ImportModal, { cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: load }) : null,
-        showCreate ? h(CreateModal, { cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: load }) : null,
+        detail ? h(DetailModal, { skill: detail, cwd, onClose: () => setDetail(null) }) : null,
+        showImport ? h(ImportModal, { cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: () => loadRef.current() }) : null,
+        showCreate ? h(CreateModal, { cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: () => loadRef.current() }) : null,
+        confirmRemove
+          ? h(Modal, { onClose: () => setConfirmRemove(null), label: "删除技能" },
+            h("div", { className: "dsm-modalHead" },
+              h("span", { className: "dsm-modalTitle" }, "删除技能"),
+              h("div", { style: { marginLeft: "auto" } },
+                IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: () => setConfirmRemove(null) }, h(IconClose, null))),
+            ),
+            h("div", { className: "dsm-modalBody" },
+              h("div", null, "确定删除技能「", h("b", null, confirmRemove.name), "」？"),
+              h("div", { className: "dsm-pathRow", style: { marginTop: "8px" } },
+                h("code", { className: "dsm-path", title: confirmRemove.path || "" }, confirmRemove.path || ""),
+              ),
+              h("div", { className: "dsm-footNote" }, "技能目录下的全部文件都会被移除，此操作不可撤销。"),
+              h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
+                h("button", { type: "button", className: "dsm-iconBtn", onClick: () => setConfirmRemove(null) }, h("span", { style: { padding: "0 6px" } }, "取消")),
+                h("button", { type: "button", className: "dsm-primary", onClick: () => removeSkill(confirmRemove) },
+                  h(IconTrash, null), h("span", null, "删除")),
+              ),
+            ),
+          )
+          : null,
       );
     }
 
@@ -866,6 +1100,12 @@ window.__ModuleLoader__.load({
 
     exports.apply = apply;
     exports.inject = inject;
+    // 纯函数直测面：Markdown 解析与作用域判定不依赖 React/DOM，可在 node 里直接断言。
+    exports.__pure = Object.freeze({
+      parseInline,
+      parseMarkdown,
+      scopeTextOf,
+    });
     return module.exports;
   },
 });

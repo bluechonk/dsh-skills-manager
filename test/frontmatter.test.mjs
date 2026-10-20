@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { invocationOf, isDisabledFlag, isValidSkillName, parseFrontmatter, setDisableModelInvocation } from '../lib/frontmatter.js'
+import { invocationOf, isDisabledFlag, isLosslessUtf8, isValidSkillName, parseFrontmatter, setDisableModelInvocation } from '../lib/frontmatter.js'
 
 test('parseFrontmatter 解析顶层标量与引号', () => {
   const text = ['---', 'name: demo-skill', 'description: "带引号的描述"', '---', '', '正文'].join('\n')
@@ -51,6 +51,32 @@ test('setDisableModelInvocation 对缺 frontmatter 的文件报错', () => {
   assert.throws(() => setDisableModelInvocation('没有 frontmatter', true))
 })
 
+test('setDisableModelInvocation 保留 CRLF 换行风格', () => {
+  const text = ['---', 'name: demo', 'description: 描述', '---', '', '# 正文', ''].join('\r\n')
+  const disabled = setDisableModelInvocation(text, true)
+  assert.match(disabled, /disable-model-invocation: true\r\n/)
+  assert.ok(disabled.includes('\r\n'))
+  assert.ok(!/[^\r]\n/.test(disabled), '不应混入裸 LF')
+  const enabled = setDisableModelInvocation(disabled, false)
+  assert.equal(enabled, text)
+})
+
+test('setDisableModelInvocation 保留 UTF-8 BOM', () => {
+  const text = '\uFEFF' + ['---', 'name: demo', 'description: 描述', '---', 'body'].join('\n')
+  const disabled = setDisableModelInvocation(text, true)
+  assert.ok(disabled.startsWith('\uFEFF'))
+  assert.match(disabled, /disable-model-invocation: true/)
+  assert.equal(setDisableModelInvocation(disabled, false), text)
+})
+
+test('setDisableModelInvocation 只增删目标键，其余行逐字不动', () => {
+  const text = ['---', 'name: demo', 'description: "含 \\"引号\\" 的描述"', 'whenToUse: 何时用', '---', '', '正文保持不动', ''].join('\n')
+  const disabled = setDisableModelInvocation(text, true)
+  assert.match(disabled, /description: "含 \\"引号\\" 的描述"/)
+  assert.match(disabled, /whenToUse: 何时用/)
+  assert.match(disabled, /正文保持不动/)
+})
+
 test('isDisabledFlag 接受 DSH 的布尔写法', () => {
   for (const value of ['true', 'TRUE', 'yes', 'on', '1']) assert.equal(isDisabledFlag(value), true)
   for (const value of ['false', 'no', 'off', '0', 'maybe', undefined]) assert.equal(isDisabledFlag(value), false)
@@ -67,4 +93,37 @@ test('isValidSkillName 只接受 kebab-case', () => {
   assert.equal(isValidSkillName('Demo'), false)
   assert.equal(isValidSkillName('demo_skill'), false)
   assert.equal(isValidSkillName('-demo'), false)
+  assert.equal(isValidSkillName('x'.repeat(65)), false)
+})
+
+test('parseFrontmatter 不把块标量里的 --- 当成结束标记', () => {
+  const text = ['---', 'name: demo', 'description: |', '  第一段', '  ---', '  第二段', '---', 'body'].join('\n')
+  const parsed = parseFrontmatter(text)
+  assert.equal(parsed.data.name, 'demo')
+  assert.match(parsed.data.description, /第一段/)
+  assert.match(parsed.data.description, /第二段/)
+  assert.equal(parsed.body.trim(), 'body')
+})
+
+test('setDisableModelInvocation 不把键插进块标量里', () => {
+  const text = ['---', 'name: demo', 'description: |', '  第一段', '  ---', '  第二段', '---', 'body'].join('\n')
+  const disabled = setDisableModelInvocation(text, true)
+  const lines = disabled.split('\n')
+  const end = lines.indexOf('---', 1)
+  const keyIndex = lines.indexOf('disable-model-invocation: true')
+  // 键必须落在 frontmatter 内（结束标记之前），且在 description 块之后——不能插进块里。
+  assert.ok(keyIndex > 0 && keyIndex < end)
+  assert.ok(keyIndex > lines.indexOf('  第二段'))
+  // 描述块内容保持原样
+  assert.match(disabled, /  第一段/)
+  assert.match(disabled, /  第二段/)
+})
+
+test('isLosslessUtf8 识别非 UTF-8 内容', () => {
+  assert.equal(isLosslessUtf8(Buffer.from('你好', 'utf8')), true)
+  // GBK 的「你好」
+  const gbk = Buffer.from([0xc4, 0xe3, 0xba, 0xc3])
+  assert.equal(isLosslessUtf8(gbk), false)
+  // 带 BOM 的 UTF-8 仍算可无损解码
+  assert.equal(isLosslessUtf8(Buffer.from('\uFEFFabc', 'utf8')), true)
 })
