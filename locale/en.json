@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Skills Manager",
-    "description": "Browse and manage every skill the Harness has loaded: global ~/.dsh/skills and ~/.agents/skills roots, plus project and workspace roots. Search, group by source, toggle model invocation, import from external agent skill folders (symlink or copy), and remove skills you no longer need."
+    "description": "Browse and manage every skill the Harness has loaded: global ~/.dsh/skills and ~/.agents/skills roots, plus project and workspace roots. Switch scope, search, read Markdown-rendered details, toggle model invocation, import from external agent skill folders (symlink or copy), and remove skills you no longer need."
   }
 }

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "技能管理",
-    "description": "浏览并管理 Harness 当前加载的全部技能：全局 ~/.dsh/skills 与 ~/.agents/skills 根目录，以及项目与工作区根目录。支持搜索、按来源分组、启停模型调用、从外部 Agent 技能目录导入（软链或复制）、删除不再需要的技能。"
+    "description": "浏览并管理 Harness 当前加载的全部技能：全局 ~/.dsh/skills 与 ~/.agents/skills 根目录，以及项目与工作区根目录。可切换作用域、搜索、以 Markdown 查看详情、启停模型调用、从外部 Agent 技能目录导入（软链或复制）、删除不再需要的技能。"
   }
 }
