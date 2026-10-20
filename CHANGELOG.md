@@ -11,16 +11,15 @@
 - 客户端内置 zh/en 词典（100+ 条文案），覆盖分区标题、工具条、列表、分组标题、详情/导入/新建/删除弹窗、状态与错误提示。
 - 宿主错误响应新增稳定 `code` 与 `params`，客户端按 code 取对应语言文案（无 code 时退回原文）。
 - `README.en.md` 英文版文档；`README.md` 顶部加语言切换入口。
-- `dsh.client.inject` 增加 `@deepseek-ai/dsh-client-locale`，保证 locale 服务在插件加载前就绪。
 
 ### 调整
 
-- 语言侦测回退链：宿主 locale 服务 → `document.documentElement.lang` → `navigator.language`。
-- 语言切换时面板自动重渲染（订阅 locale 变化）。
+- **改用宿主官方 i18n 机制**（与 dsh-usage-stats 一致）：`ctx.locale.register(ns, {zh, en})` 注册字典，分区注册项声明 `locale: ns`，宿主注入 `t` prop（引用随语言切换而变 → 自动重渲染）；`inject = ["slots", "locale"]`。
+- 修掉「不跟随 DSH 语言设置」的问题：初版自己读浏览器语言（`document.documentElement.lang` / `navigator.language`），会被浏览器语言钉死；现在在「设置 → 通用设置 → 语言」里切换，**不刷新页面**本分区立即跟着变（中 ⇄ 英双向验证）。
 
 ### 验证
 
-英文界面与详情弹窗实机截图（`docs/images/07-英文界面.png`、`08-英文详情弹窗.png`）；新增 4 项 i18n 单测，单测共 58 项全绿。
+运行时双向切换实拍（`docs/images/07-英文界面.png`、`09-切回中文.png`）；英文详情弹窗 `docs/images/08-英文详情弹窗.png`；i18n 单测覆盖词典键一致、无空文案、占位符插值、兜底翻译器，**单测共 61 项全绿**。
 
 ## 1.0.3
 

@@ -35,19 +35,19 @@ assert.ok(captured !== null && captured.__pure !== undefined, '桩物化失败�
 const P = captured.__pure
 
 test('__pure 导出面固定（防导出漂移）', () => {
-  assert.deepEqual(Object.keys(P).sort(), ['currentLocale', 'localizeError', 'normalizeLocaleId', 'parseInline', 'parseMarkdown', 'scopeTextOf', 'setLocale', 'strings'])
+  assert.deepEqual(Object.keys(P).sort(), ['fallbackT', 'interpolate', 'localeDict', 'localeNs', 'localizeError', 'parseInline', 'parseMarkdown', 'scopeTextOf', 'tr'])
   assert.ok(Object.isFrozen(P))
 })
 
 test('中英词典键完全一致（缺一即视为漏翻）', () => {
-  const zh = Object.keys(P.strings.zh).sort()
-  const en = Object.keys(P.strings.en).sort()
+  const zh = Object.keys(P.localeDict.zh).sort()
+  const en = Object.keys(P.localeDict.en).sort()
   assert.deepEqual(en, zh)
   assert.ok(zh.length > 60, `词典条目过少：${zh.length}`)
 })
 
 test('中英词典没有空文案', () => {
-  for (const [locale, dict] of Object.entries(P.strings)) {
+  for (const [locale, dict] of Object.entries(P.localeDict)) {
     for (const [key, value] of Object.entries(dict)) {
       assert.equal(typeof value, 'string', `${locale}.${key} 不是字符串`)
       assert.notEqual(value.trim(), '', `${locale}.${key} 为空`)
@@ -55,28 +55,39 @@ test('中英词典没有空文案', () => {
   }
 })
 
-test('normalizeLocaleId 把语言归到 zh / en', () => {
-  assert.equal(P.normalizeLocaleId('zh'), 'zh')
-  assert.equal(P.normalizeLocaleId('zh-CN'), 'zh')
-  assert.equal(P.normalizeLocaleId('en'), 'en')
-  assert.equal(P.normalizeLocaleId('en-US'), 'en')
-  assert.equal(P.normalizeLocaleId('fr'), '')
-  assert.equal(P.normalizeLocaleId(''), '')
-  assert.equal(P.normalizeLocaleId(undefined), '')
+test('interpolate 填占位符，未命中的保留原样', () => {
+  assert.equal(P.interpolate('共 {n} 个', { n: 3 }), '共 3 个')
+  assert.equal(P.interpolate('共 {n} 个', { m: 3 }), '共 {n} 个')
+  assert.equal(P.interpolate('无占位符'), '无占位符')
 })
 
-test('localizeError 按 code 查对应语言的文案', () => {
-  const zh = P.localizeError({ code: 'skill-not-found', params: { name: 'demo' } })
-  assert.equal(zh, '找不到技能：demo')
-  // 切到英文后，同一个 code 出英文文案
-  P.setLocale('en')
-  assert.equal(P.currentLocale(), 'en')
-  assert.equal(P.localizeError({ code: 'skill-not-found', params: { name: 'demo' } }), 'Skill not found: demo')
+test('fallbackT 无宿主 t 时输出中文', () => {
+  const t = P.fallbackT()
+  assert.equal(t('section.title'), '技能')
+  assert.equal(t('section.installed'), '已安装')
+  assert.equal(t('not-exist-key'), 'not-exist-key')
+})
+
+test('tr 用传入的 t（宿主注入的翻译器）取文案', () => {
+  const fake = (key, params) => 'EN:' + key + (params ? ':' + JSON.stringify(params) : '')
+  assert.equal(P.tr(fake, 'section.title'), 'EN:section.title')
+  assert.equal(P.tr(fake, 'import.selected', { n: 1, total: 2 }), 'EN:import.selected:{"n":1,"total":2}')
+  // 没有 t 时退回中文兜底
+  assert.equal(P.tr(null, 'section.title'), '技能')
+})
+
+test('localeNs 与宿主注册项一致', () => {
+  assert.equal(P.localeNs, 'dsh-skills-manager')
+})
+
+test('localizeError 按 code 查本地化文案，无 code 退回原文', () => {
+  // 未接宿主时用中文兜底
+  assert.equal(P.localizeError({ code: 'skill-not-found', params: { name: 'demo' } }), '找不到技能：demo')
   // 没有 code 时退回原文
   assert.equal(P.localizeError({ message: 'raw message' }), 'raw message')
   assert.equal(P.localizeError(null).length > 0, true)
-  P.setLocale('zh')
-  assert.equal(P.currentLocale(), 'zh')
+  // 未知 code 也退回原文
+  assert.equal(P.localizeError({ code: 'no-such-code', message: 'raw' }), 'raw')
 })
 
 test('parseInline 识别行内代码/粗体/斜体/删除线', () => {

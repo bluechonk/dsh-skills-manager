@@ -6,7 +6,7 @@ A DeepSeek Harness plugin that adds a **Skills** section right below **Models** 
 
 ![Skills section in the settings page](docs/images/01-设置页技能分区.png)
 
-The plugin UI follows the host's language setting: when the Harness is switched to English, every label, button and message in this section switches to English automatically.
+The plugin UI follows the host's language setting: switch it under "Settings → General → Language" and **no page reload is needed** — every label, button and message in this section switches immediately. The implementation uses the host's official i18n mechanism (`@deepseek-ai/dsh-client-locale`): the dictionary is registered with `ctx.locale.register` and the section registration declares its `locale` namespace, so the `t` reference the host injects changes with the language.
 
 ## Plugin identity
 
@@ -54,6 +54,10 @@ English UI (the plugin follows the Harness language automatically):
 ![English UI](docs/images/07-英文界面.png)
 
 ![English detail dialog](docs/images/08-英文详情弹窗.png)
+
+Back to Chinese (same page, no reload):
+
+![Back to Chinese](docs/images/09-切回中文.png)
 
 ## Design baseline
 

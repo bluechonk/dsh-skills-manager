@@ -1,3 +1,38 @@
+    function apply(ctx) {
+      ensureStyles();
+      if (ctx === null || typeof ctx !== "object" || !ctx.slots) {
+        console.warn("[dsh-skills-manager] 宿主未提供 slots，设置分区未注册。");
+        return;
+      }
+      // 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale。
+      // 字典注册走 ctx.effect——卸载时自动注销，避免热重载后「同一命名空间重复注册」抛错。
+      let boundT = null;
+      if (ctx.locale !== null && ctx.locale !== undefined) {
+        ctx.effect(
+          () => ctx.locale.register(LOCALE_NS, LOCALE_DICT),
+          "dsh-skills-manager: locale dictionary",
+        );
+        // 绑定函数引用稳定，但每次调用读**当前**语言——分区 label 用它即可跟随切换
+        boundT = ctx.locale.bind(LOCALE_NS);
+        currentT = boundT;
+      } else {
+        console.warn("[dsh-skills-manager] 宿主未提供 locale，分区保持中文。");
+      }
+      ctx.slots.inject("settings.section", () =>
+        ctx.slots.register(
+          {
+            name: "settings.section",
+            id: "dsh-skills-manager",
+            order: 11,
+            // 声明 locale 命名空间：宿主据此注入 t prop（引用随语言切换而变 → 自动重渲染）
+            locale: LOCALE_NS,
+            label: () => tr(boundT, "section.title"),
+          },
+          Panel,
+        ),
+      );
+    }
+
 // dsh-skills-manager client 半边。
 //
 // 职责（单文件）：设置页「模型」下方的「技能」分区（settings.section order 11）——
@@ -355,7 +390,7 @@ window.__ModuleLoader__.load({
 
     /** 宿主返回的错误对象：带上 code/params，界面按 code 查本地化文案。 */
     function makeError(payload, status) {
-      const error = new Error((payload && payload.error) || t("error.request-failed", { status }));
+      const error = new Error((payload && payload.error) || tr(currentT, "error.request-failed", { status }));
       if (payload && payload.code) error.code = payload.code;
       if (payload && payload.params) error.params = payload.params;
       return error;
@@ -374,7 +409,7 @@ window.__ModuleLoader__.load({
         if (!response.ok || payload.ok === false) throw makeError(payload, response.status);
         return payload;
       } catch (error) {
-        if (error && error.name === "AbortError") throw new Error(t("error.timeout"));
+        if (error && error.name === "AbortError") throw new Error(tr(currentT, "error.timeout"));
         throw error;
       } finally {
         clearTimeout(timer);
@@ -395,7 +430,7 @@ window.__ModuleLoader__.load({
         if (!response.ok || payload.ok === false) throw makeError(payload, response.status);
         return payload;
       } catch (error) {
-        if (error && error.name === "AbortError") throw new Error(t("error.timeout"));
+        if (error && error.name === "AbortError") throw new Error(tr(currentT, "error.timeout"));
         throw error;
       } finally {
         clearTimeout(timer);
@@ -403,11 +438,18 @@ window.__ModuleLoader__.load({
     }
 
     /* ---------------------------------------------------------------- */
-    /* 国际化：内置 zh/en 词典，跟随宿主的语言设置                                */
+    /* 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale                */
+    /*                                                                      */
+    /* 用法与 dsh-usage-stats 一致：                                            */
+    /*   ctx.locale.register(ns, {zh, en}) 注册字典；分区注册项声明 locale: ns 后，  */
+    /*   宿主注入 t prop（引用随语言切换而变 → React 自动重渲染，无需刷新页面）。   */
+    /*   字典内联在此：client 半走 __ModuleLoader__ 的工厂格式，不支持相对路径     */
+    /*   require——单文件自包含是硬约束。                                          */
     /* ---------------------------------------------------------------- */
 
-    /** 文案词典。键名两边必须完全一致（由单测锁住）。 */
-    const STRINGS = {
+    const LOCALE_NS = "dsh-skills-manager";
+
+    const LOCALE_DICT = {
       zh: {
         "section.title": "技能",
         "section.installed": "已安装",
@@ -610,6 +652,38 @@ window.__ModuleLoader__.load({
       },
     };
 
+    /** 填 {name} 占位符（与宿主 translate 的规则一致）。 */
+    function interpolate(template, params) {
+      if (params === null || params === undefined) return template;
+      return String(template).replace(/\{(\w+)\}/g, (match, name) =>
+        name in params ? String(params[name]) : match,
+      );
+    }
+
+    /** 中文兜底翻译器：宿主没给 t 时用它（输出与中文版逐字相同）。 */
+    function fallbackT() {
+      return (key, params) => {
+        const dict = LOCALE_DICT.zh;
+        const template = Object.prototype.hasOwnProperty.call(dict, key) ? dict[key] : key;
+        return interpolate(template, params);
+      };
+    }
+
+    /**
+     * 取文案：优先用宿主注入的 t，其次用绑定的 currentT，最后中文兜底。
+     * 占位符没被替换时告警一次，别让它悄悄显示到界面上。
+     */
+    function tr(t, key, params) {
+      const text = (t === null || t === undefined ? (currentT || fallbackT()) : t)(key, params);
+      if (typeof text === "string" && text.includes("{") && text.includes("}")) {
+        console.warn("[dsh-skills-manager] unresolved placeholder in translation key: " + key + " -> " + text);
+      }
+      return text;
+    }
+
+    /** 宿主绑定的翻译函数（引用稳定，每次调用读当前语言），供组件外的地方使用。 */
+    let currentT = null;
+
     /** 根标签 → 展示名（由客户端本地化，不依赖宿主的中文标题）。 */
     const ROOT_TITLE_KEYS = {
       "user-dsh": "root.userDsh",
@@ -623,51 +697,17 @@ window.__ModuleLoader__.load({
 
     function rootTitleOf(source) {
       const key = ROOT_TITLE_KEYS[source];
-      return key ? t(key) : String(source || "");
-    }
-
-    /** 当前语言与订阅者。 */
-    const localeState = { active: "zh" };
-    const localeListeners = new Set();
-
-    /** 归一化语言 id：zh* → zh，其余按前缀判定为 en。 */
-    function normalizeLocaleId(raw) {
-      const value = String(raw || "").toLowerCase();
-      if (value.startsWith("zh")) return "zh";
-      if (value.startsWith("en")) return "en";
-      return "";
-    }
-
-    /** 切换语言并通知订阅者。 */
-    function setLocale(next) {
-      const id = normalizeLocaleId(next);
-      if (!id || id === localeState.active) return;
-      localeState.active = id;
-      for (const listener of [...localeListeners]) listener();
-    }
-
-    /** 取文案：{n} 之类的占位符用 params 填充。 */
-    function t(key, params) {
-      const dict = STRINGS[localeState.active] || STRINGS.zh;
-      const fallback = STRINGS.zh[key];
-      let value = dict[key] !== undefined ? dict[key] : fallback;
-      if (value === undefined) return key;
-      if (params) {
-        for (const name of Object.keys(params)) {
-          value = value.split("{" + name + "}").join(String(params[name]));
-        }
-      }
-      return value;
+      return key ? tr(currentT, key) : String(source || "");
     }
 
     /** 宿主返回的错误：按 code 查本地化文案，没有 code 就退回原文。 */
     function localizeError(error) {
-      if (!error) return t("error.internal-error");
+      if (!error) return tr(currentT, "error.internal-error");
       const code = error.code ? String(error.code) : "";
-      if (code && STRINGS.zh["error." + code] !== undefined) {
-        return t("error." + code, error.params || {});
+      if (code && Object.prototype.hasOwnProperty.call(LOCALE_DICT.zh, "error." + code)) {
+        return tr(currentT, "error." + code, error.params || {});
       }
-      return error.message || t("error.internal-error");
+      return error.message || tr(currentT, "error.internal-error");
     }
 
     /* ---------------------------------------------------------------- */
@@ -681,7 +721,7 @@ window.__ModuleLoader__.load({
         className: "dsm-switch",
         role: "switch",
         "aria-checked": on ? "true" : "false",
-        "aria-label": props.label || t("aria.switch"),
+        "aria-label": props.label || tr(currentT, "aria.switch"),
         "data-on": on ? "true" : "false",
         disabled: props.disabled || false,
         onClick: (event) => { event.stopPropagation(); props.onChange(!on); },
@@ -758,7 +798,7 @@ window.__ModuleLoader__.load({
         className: "dsm-modal" + (props.modalClassName ? " " + props.modalClassName : ""),
         role: "dialog",
         "aria-modal": "true",
-        "aria-label": props.label || t("aria.dialog"),
+        "aria-label": props.label || tr(currentT, "aria.dialog"),
         tabIndex: -1,
         ref: ref,
       }, props.children));
@@ -774,13 +814,14 @@ window.__ModuleLoader__.load({
       if (source === "project-dsh" || source === "project-agents") {
         const parts = String(skill.rootPath || "").split(/[\\/]+/).filter(Boolean);
         // 根目录形如 <projectRoot>/.dsh/skills，倒退两级即项目根，取其末段做名字。
-        return parts.length >= 3 ? parts[parts.length - 3] : t("scope.workspace");
+        return parts.length >= 3 ? parts[parts.length - 3] : tr(currentT, "scope.workspace");
       }
-      if (source === "bundled" || source === "runtime") return t("scope.builtin");
-      return t("scope.personal");
+      if (source === "bundled" || source === "runtime") return tr(currentT, "scope.builtin");
+      return tr(currentT, "scope.personal");
     }
 
     function DetailModal(props) {
+      const t = props.t || currentT || fallbackT();
       const skill = props.skill;
       const [detail, setDetail] = useState(null);
       const [error, setError] = useState(null);
@@ -859,6 +900,7 @@ window.__ModuleLoader__.load({
     /* ---------------------------------------------------------------- */
 
     function ImportModal(props) {
+      const t = props.t || currentT || fallbackT();
       const [data, setData] = useState(null);
       const [error, setError] = useState(null);
       const [selected, setSelected] = useState(() => new Set());
@@ -1033,6 +1075,7 @@ window.__ModuleLoader__.load({
     /* ---------------------------------------------------------------- */
 
     function CreateModal(props) {
+      const t = props.t || currentT || fallbackT();
       const [name, setName] = useState("");
       const [description, setDescription] = useState("");
       const [error, setError] = useState(null);
@@ -1101,8 +1144,9 @@ window.__ModuleLoader__.load({
 
     const WRITABLE_ROOT_KINDS = new Set(["global", "project", "custom"]);
 
-    function Panel() {
-      const [, setLocaleTick] = useState(0);
+    function Panel(props) {
+      // t 由宿主按 locale 命名空间注入（引用随语言切换而变 → 自动重渲染，无需刷新页面）。
+      const t = props.t || currentT || fallbackT();
       const [state, setState] = useState(null);
       const [error, setError] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -1148,13 +1192,6 @@ window.__ModuleLoader__.load({
       useEffect(() => { loadRef.current = load; }, [load]);
 
       useEffect(() => { load(); }, [load]);
-
-      // 语言切换：重新渲染，界面文案跟着宿主语言走。
-      useEffect(() => {
-        const listener = () => setLocaleTick((value) => value + 1);
-        localeListeners.add(listener);
-        return () => { localeListeners.delete(listener); };
-      }, []);
 
       const skills = (state && state.skills) || [];
       const totals = (state && state.totals) || { skills: 0, installed: 0 };
@@ -1360,9 +1397,9 @@ window.__ModuleLoader__.load({
           )
           : null,
 
-        detail ? h(DetailModal, { skill: detail, cwd, onClose: () => setDetail(null) }) : null,
-        showImport ? h(ImportModal, { cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: () => loadRef.current() }) : null,
-        showCreate ? h(CreateModal, { cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: () => loadRef.current() }) : null,
+        detail ? h(DetailModal, { t, skill: detail, cwd, onClose: () => setDetail(null) }) : null,
+        showImport ? h(ImportModal, { t, cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: () => loadRef.current() }) : null,
+        showCreate ? h(CreateModal, { t, cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: () => loadRef.current() }) : null,
         confirmRemove
           ? h(Modal, { onClose: () => setConfirmRemove(null), label: t("delete.title") },
             h("div", { className: "dsm-modalHead" },
@@ -1397,30 +1434,19 @@ window.__ModuleLoader__.load({
         console.warn("[dsh-skills-manager] 宿主未提供 slots，设置分区未注册。");
         return;
       }
-      // 跟随宿主的语言设置：优先读 locale 服务，缺失时退回文档语言。
-      const localeService = typeof ctx.get === "function" ? ctx.get("locale") : undefined;
-      if (localeService) {
-        const read = () => {
-          try {
-            if (typeof localeService.getSnapshot === "function") return localeService.getSnapshot().active;
-            if (typeof localeService.getLocale === "function") return localeService.getLocale().active;
-          } catch {
-            /* 读不到就保持当前语言 */
-          }
-          return "";
-        };
-        setLocale(read());
-        if (typeof localeService.subscribe === "function") {
-          try {
-            localeService.subscribe(() => setLocale(read()));
-          } catch {
-            /* 订阅失败：仍可用初始语言 */
-          }
-        }
+      // 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale。
+      // 字典注册走 ctx.effect——卸载时自动注销，避免热重载后「同一命名空间重复注册」抛错。
+      let boundT = null;
+      if (ctx.locale !== null && ctx.locale !== undefined) {
+        ctx.effect(
+          () => ctx.locale.register(LOCALE_NS, LOCALE_DICT),
+          "dsh-skills-manager: locale dictionary",
+        );
+        // 绑定函数引用稳定，但每次调用读**当前**语言——分区 label 用它即可跟随切换
+        boundT = ctx.locale.bind(LOCALE_NS);
+        currentT = boundT;
       } else {
-        // 回退链：文档语言属性 → 浏览器语言。
-        if (typeof document !== "undefined" && document.documentElement) setLocale(document.documentElement.lang);
-        if (localeState.active === "zh" && typeof navigator !== "undefined") setLocale(navigator.language);
+        console.warn("[dsh-skills-manager] 宿主未提供 locale，分区保持中文。");
       }
       ctx.slots.inject("settings.section", () =>
         ctx.slots.register(
@@ -1428,14 +1454,16 @@ window.__ModuleLoader__.load({
             name: "settings.section",
             id: "dsh-skills-manager",
             order: 11,
-            label: () => t("section.title"),
+            // 声明 locale 命名空间：宿主据此注入 t prop（引用随语言切换而变 → 自动重渲染）
+            locale: LOCALE_NS,
+            label: () => tr(boundT, "section.title"),
           },
           Panel,
         ),
       );
     }
 
-    const inject = ["slots"];
+    const inject = ["slots", "locale"];
 
     exports.apply = apply;
     exports.inject = inject;
@@ -1444,11 +1472,12 @@ window.__ModuleLoader__.load({
       parseInline,
       parseMarkdown,
       scopeTextOf,
-      strings: STRINGS,
-      normalizeLocaleId,
+      localeDict: LOCALE_DICT,
+      localeNs: LOCALE_NS,
+      interpolate,
+      fallbackT,
+      tr,
       localizeError,
-      setLocale,
-      currentLocale: () => localeState.active,
     });
     return module.exports;
   },
