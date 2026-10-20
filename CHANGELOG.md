@@ -2,6 +2,21 @@
 
 本文件记录 dsh-skills-manager 的版本变更。
 
+## 1.0.2
+
+设计对齐与功能增强。
+
+### 新增
+
+- 详情弹窗展示 **SKILL.md 正文**（frontmatter 剥离后的内容），按 Markdown 渲染成可滚动卡片，形态对齐 Codex 的技能页；标题右侧新增「Skill」徽章。
+- 文档新增「ZCode 设计对齐」章节与 ZCode 实测取材（`docs/reference/`）。
+
+### 调整
+
+- 样式按 ZCode 实测参数重写：标题 30px/600、工具条 justify-between、作用域按钮 28px 胶囊、搜索框 36px/12px/256px、卡片 12px 无描边、行高 65px、图标块 36px、开关 32×18（开=前景色轨 + 背景色钮）。
+- 分层底色改用 `color-mix(label-primary, %)`：DSH 浅色主题下 `bg-layer-1/layer-2` 都是纯白，直接用会让卡片与图标块消失。
+- 弹窗遮罩与阴影按 ZCode 用固定黑色（两套主题一致）。
+
 ## 1.0.1
 
 代码评审后的修复版本。

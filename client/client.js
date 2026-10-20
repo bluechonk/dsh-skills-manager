@@ -3,7 +3,7 @@
 // 职责（单文件）：设置页「模型」下方的「技能」分区（settings.section order 11）——
 //   作用域下拉（用户·本机 / 各工作区）+ 技能计数 + 搜索框；
 //   「已安装」分组（可管理：模型调用开关、删除、打开目录）+ 「内置」只读分组；
-//   技能详情弹窗（描述 / 范围 / 状态 / 文件路径，描述按 Markdown 渲染）；
+//   技能详情弹窗（描述 / SKILL.md 正文 Markdown / 范围 / 状态 / 文件路径）；
 //   「导入外部 Agent 技能」弹窗（外部目录发现、软链或复制、导入到全局或项目）；
 //   「新建」弹窗（生成最小可用技能目录）。
 //
@@ -27,53 +27,59 @@ window.__ModuleLoader__.load({
     /* 样式                                                              */
     /* ---------------------------------------------------------------- */
 
+    // 视觉规格对齐 ZCode 的「技能」页（实测取值）：
+    //   标题 30px/600/-0.75px、内容列 max-w-4xl(896px) 居中、块间距 32px、
+    //   工具条 justify-between + 12px 间隔、作用域按钮 28px 胶囊、搜索框 36px/12px 圆角/256px、
+    //   卡片 12px 圆角无描边、行高 65px/内距 12px 16px、图标块 36px/12px 圆角、
+    //   名称 14px/400、描述 12px 60%、开关 32x18（开=前景色轨 + 背景色钮）。
     const CSS = [
-      ".dsm-root{display:flex;flex-direction:column;gap:18px;min-width:0;color:var(--dsw-alias-label-primary);font-size:14px}",
-      ".dsm-title{font-size:28px;font-weight:700;letter-spacing:-.01em;margin:0;line-height:1.2}",
+      ".dsm-root{display:flex;flex-direction:column;gap:32px;min-width:0;max-width:896px;margin:0 auto;padding-bottom:40px;color:var(--dsw-alias-label-primary);font-size:14px}",
+      ".dsm-title{font-size:30px;font-weight:600;letter-spacing:-.75px;line-height:36px;margin:0}",
       // —— 顶部工具条 ——
-      ".dsm-toolbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap}",
+      ".dsm-toolbar{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px}",
+      ".dsm-toolbarLeft{display:flex;flex-wrap:wrap;align-items:center;gap:12px;min-width:0}",
       ".dsm-scope{position:relative;flex:none}",
-      ".dsm-scopeBtn{display:inline-flex;align-items:center;gap:8px;height:34px;padding:0 12px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;cursor:pointer}",
-      ".dsm-scopeBtn:hover{border-color:var(--dsw-alias-border-l2)}",
+      ".dsm-scopeBtn{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 8px;border-radius:9999px;border:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;font-weight:400;cursor:pointer}",
+      ".dsm-scopeBtn:hover{background:var(--dsw-alias-bg-layer-1)}",
       ".dsm-divider{width:1px;height:20px;background:var(--dsw-alias-border-l1);flex:none}",
-      ".dsm-meta{color:var(--dsw-alias-label-secondary);font-size:13.5px;white-space:nowrap}",
-      ".dsm-meta b{font-weight:600;color:var(--dsw-alias-label-primary)}",
-      ".dsm-searchWrap{margin-left:auto;position:relative;display:flex;align-items:center;min-width:160px;max-width:340px;flex:1}",
+      ".dsm-meta{color:var(--dsw-alias-label-secondary);font-size:14px;white-space:nowrap}",
+      ".dsm-meta b{font-weight:400;color:var(--dsw-alias-label-secondary)}",
+      ".dsm-searchWrap{position:relative;display:flex;align-items:center;width:256px;max-width:100%;flex:none}",
       ".dsm-searchWrap svg{position:absolute;left:10px;pointer-events:none;color:var(--dsw-alias-label-secondary)}",
-      ".dsm-search{width:100%;height:34px;padding:0 12px 0 32px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;outline:none}",
+      ".dsm-search{width:100%;height:36px;padding:0 12px 0 36px;border-radius:12px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary);font:inherit;font-size:14px;outline:none}",
       ".dsm-search:focus{border-color:var(--dsw-alias-brand-primary)}",
       ".dsm-search::placeholder{color:var(--dsw-alias-label-secondary)}",
       // —— 分组标题 ——
-      ".dsm-sectionHead{display:flex;align-items:center;gap:10px}",
-      ".dsm-sectionTitle{font-size:15px;font-weight:600}",
-      ".dsm-sectionCount{color:var(--dsw-alias-label-secondary);font-weight:400;font-size:13px;margin-left:2px}",
-      ".dsm-actions{margin-left:auto;display:flex;align-items:center;gap:8px}",
-      ".dsm-iconBtn{width:30px;height:30px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);cursor:pointer}",
+      ".dsm-sectionHead{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}",
+      ".dsm-sectionTitle{font-size:14px;font-weight:400;color:var(--dsw-alias-label-primary)}",
+      ".dsm-sectionCount{color:var(--dsw-alias-label-secondary);font-weight:400;font-size:12px;margin-left:2px}",
+      ".dsm-actions{display:flex;align-items:center;gap:8px}",
+      ".dsm-iconBtn{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-primary);cursor:pointer}",
       ".dsm-iconBtn:hover{background:var(--dsw-alias-bg-layer-2)}",
-      ".dsm-primary{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 12px;border-radius:8px;border:1px solid transparent;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base);font:inherit;font-size:13.5px;font-weight:500;cursor:pointer}",
+      ".dsm-primary{display:inline-flex;align-items:center;gap:4px;height:28px;padding:0 8px 0 6px;border-radius:8px;border:1px solid transparent;background:var(--dsw-alias-label-primary);color:var(--dsw-alias-bg-base);font:inherit;font-size:14px;font-weight:400;cursor:pointer}",
       ".dsm-primary:disabled{opacity:.5;cursor:not-allowed}",
       // —— 列表 ——
-      ".dsm-list{display:flex;flex-direction:column;border:1px solid var(--dsw-alias-border-l1);border-radius:12px;overflow:hidden;background:var(--dsw-alias-bg-layer-1)}",
-      ".dsm-row{display:flex;align-items:center;gap:14px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l1);cursor:pointer}",
+      ".dsm-list{display:flex;flex-direction:column;border-radius:12px;overflow:hidden;background:color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent)}",
+      ".dsm-row{display:flex;align-items:center;gap:12px;min-height:65px;padding:12px 16px;border-bottom:1px solid var(--dsw-alias-border-l1);cursor:pointer}",
       ".dsm-row:last-child{border-bottom:none}",
-      ".dsm-row:hover{background:var(--dsw-alias-bg-layer-2)}",
-      ".dsm-icon{width:32px;height:32px;flex:none;border-radius:9px;display:flex;align-items:center;justify-content:center;background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-secondary);border:1px solid var(--dsw-alias-border-l1)}",
-      ".dsm-rowMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}",
-      ".dsm-name{font-size:14.5px;font-weight:600;line-height:1.3;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".dsm-desc{font-size:12.5px;color:var(--dsw-alias-label-secondary);line-height:1.4;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".dsm-row:hover{background:color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent)}",
+      ".dsm-icon{width:36px;height:36px;flex:none;border-radius:12px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent);color:var(--dsw-alias-label-secondary)}",
+      ".dsm-rowMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
+      ".dsm-name{font-size:14px;font-weight:400;line-height:21px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".dsm-desc{font-size:12px;color:var(--dsw-alias-label-secondary);line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-badges{display:flex;gap:6px;align-items:center;flex:none}",
       ".dsm-badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:11.5px;white-space:nowrap}",
       // —— 开关 ——
-      ".dsm-switch{position:relative;width:38px;height:22px;flex:none;border-radius:999px;border:1px solid var(--dsw-alias-border-l2);background:var(--dsw-alias-bg-layer-2);cursor:pointer;padding:0}",
-      ".dsm-switch[data-on=\"true\"]{background:var(--dsw-alias-brand-primary);border-color:var(--dsw-alias-brand-primary)}",
-      ".dsm-switchKnob{position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:999px;background:var(--dsw-alias-label-primary);transition:transform .15s ease}",
-      ".dsm-switch[data-on=\"true\"] .dsm-switchKnob{transform:translateX(16px);background:var(--dsw-alias-bg-base)}",
+      ".dsm-switch{position:relative;width:32px;height:18px;flex:none;display:inline-flex;align-items:center;padding:1px;border:0;border-radius:9999px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 30%, transparent);cursor:pointer}",
+      ".dsm-switch[data-on=\"true\"]{background:var(--dsw-alias-label-primary)}",
+      ".dsm-switchKnob{display:block;width:16px;height:16px;border-radius:999px;background:var(--dsw-alias-label-primary);transition:transform .15s ease}",
+      ".dsm-switch[data-on=\"true\"] .dsm-switchKnob{transform:translateX(14px);background:var(--dsw-alias-bg-base)}",
       ".dsm-switch:focus-visible{outline:2px solid var(--dsw-alias-brand-primary);outline-offset:2px}",
-      ".dsm-trash{width:28px;height:28px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:7px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}",
+      ".dsm-trash{width:28px;height:28px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:8px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}",
       ".dsm-trash:hover{color:var(--dsw-alias-state-error-primary);background:var(--dsw-alias-bg-layer-2)}",
       ".dsm-groupTitle{padding:10px 4px 6px;font-size:12.5px;color:var(--dsw-alias-label-secondary);font-weight:600}",
       // —— 下拉菜单 ——
-      ".dsm-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;min-width:230px;padding:6px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 12px 32px color-mix(in srgb, var(--dsw-alias-label-primary) 22%, transparent);display:flex;flex-direction:column;gap:2px}",
+      ".dsm-menu{position:absolute;z-index:40;top:calc(100% + 6px);left:0;min-width:230px;padding:6px;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);box-shadow:0 12px 32px rgba(0,0,0,.28);display:flex;flex-direction:column;gap:2px}",
       ".dsm-menuRight{left:auto;right:0}",
       // 向上展开：弹窗底部的下拉菜单否则会落在弹窗外并被 overflow 裁掉。
       ".dsm-menuUp{top:auto;bottom:calc(100% + 6px)}",
@@ -82,13 +88,21 @@ window.__ModuleLoader__.load({
       ".dsm-menuItem span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-menuLabel{padding:8px 10px 4px;color:var(--dsw-alias-label-secondary);font-size:12px}",
       // —— 弹窗 ——
-      ".dsm-overlay{position:fixed;inset:0;z-index:60;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb, var(--dsw-alias-label-primary) 45%, transparent);padding:24px}",
-      ".dsm-modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-overlay);box-shadow:0 24px 64px color-mix(in srgb, var(--dsw-alias-label-primary) 28%, transparent);overflow:hidden}",
+      ".dsm-overlay{position:fixed;inset:0;z-index:60;box-sizing:border-box;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:24px}",
+      ".dsm-modal{width:min(680px,100%);max-height:88vh;display:flex;flex-direction:column;border-radius:14px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-base);box-shadow:0 24px 64px rgba(0,0,0,.32);overflow:hidden}",
       ".dsm-modalHead{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--dsw-alias-border-l1)}",
       ".dsm-modalTitle{font-size:15px;font-weight:600}",
       ".dsm-modalBody{padding:16px 18px 20px;overflow:auto;display:flex;flex-direction:column;gap:10px}",
       ".dsm-label{font-size:12.5px;color:var(--dsw-alias-label-secondary)}",
-      ".dsm-mdScroll{max-height:210px;overflow:auto;padding-right:6px;font-size:13px;line-height:1.7;color:var(--dsw-alias-label-primary);word-break:break-word}",
+      ".dsm-mdScroll{flex:none;max-height:210px;overflow:auto;padding-right:6px;font-size:13px;line-height:1.7;color:var(--dsw-alias-label-primary);word-break:break-word}",
+            ".dsm-mdCard{flex:none;max-height:min(46vh,420px);overflow:auto;border-radius:12px;border:1px solid var(--dsw-alias-border-l1);background:color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent);padding:14px 16px;font-size:13px;line-height:1.75;color:var(--dsw-alias-label-primary);word-break:break-word}",
+            ".dsm-mdCard .dsm-md-h{font-size:15px;font-weight:600;margin:16px 0 8px;line-height:1.45}",
+            ".dsm-mdCard .dsm-md-h:first-child{margin-top:0}",
+            ".dsm-mdCard .dsm-md-p{margin:0 0 10px}",
+            ".dsm-mdCard .dsm-md-list{list-style:disc;margin:0 0 10px;padding-left:20px}",
+            ".dsm-mdCard .dsm-md-list li{margin:4px 0}",
+            ".dsm-mdCard .dsm-md-code{font-size:12px;padding:2px 6px;border-radius:6px}",
+            ".dsm-badgeSkill{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:11.5px}",
       // —— Markdown 渲染 ——
       ".dsm-md-p{margin:0 0 8px}",
       ".dsm-md-p:last-child{margin-bottom:0}",
@@ -97,9 +111,9 @@ window.__ModuleLoader__.load({
       ".dsm-md-list{margin:0 0 8px;padding-left:20px}",
       ".dsm-md-list li{margin:2px 0}",
       ".dsm-md-quote{margin:0 0 8px;padding:4px 10px;border-left:2px solid var(--dsw-alias-border-l2);color:var(--dsw-alias-label-secondary)}",
-      ".dsm-md-pre{margin:0 0 8px;padding:10px 12px;border-radius:8px;background:var(--dsw-alias-bg-layer-2);border:1px solid var(--dsw-alias-border-l1);overflow:auto;white-space:pre}",
+      ".dsm-md-pre{margin:0 0 8px;padding:10px 12px;border-radius:8px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 6%, transparent);border:1px solid var(--dsw-alias-border-l1);overflow:auto;white-space:pre}",
       ".dsm-md-pre code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}",
-      ".dsm-md-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;padding:1px 4px;border-radius:4px;background:var(--dsw-alias-bg-layer-2)}",
+      ".dsm-md-code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;padding:1px 4px;border-radius:4px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 8%, transparent)}",
       ".dsm-md-p a,.dsm-md-list a,.dsm-md-h a,.dsm-md-quote a{color:var(--dsw-alias-brand-primary)}",
       ".dsm-md-hr{border:0;border-top:1px solid var(--dsw-alias-border-l1);margin:10px 0}",
       ".dsm-muted{color:var(--dsw-alias-label-secondary)}",
@@ -117,7 +131,7 @@ window.__ModuleLoader__.load({
       ".dsm-select{position:relative}",
       ".dsm-selectBtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;cursor:pointer}",
       ".dsm-importBody{padding:14px 18px;display:flex;flex-direction:column;gap:10px;overflow:auto}",
-      ".dsm-importCard{border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:6px;background:var(--dsw-alias-bg-layer-1)}",
+      ".dsm-importCard{border:1px solid var(--dsw-alias-border-l1);border-radius:12px;padding:6px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 3%, transparent)}",
       ".dsm-selectAll{display:flex;align-items:center;gap:10px;padding:8px 10px}",
       ".dsm-selCount{margin-left:auto;color:var(--dsw-alias-label-secondary);font-size:12.5px}",
       ".dsm-sourceRow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;cursor:pointer}",
@@ -524,10 +538,12 @@ window.__ModuleLoader__.load({
       const descriptionText = (detail && detail.frontmatter && typeof detail.frontmatter.description === "string" && detail.frontmatter.description !== "")
         ? detail.frontmatter.description
         : skill.description || "";
+      const bodyText = detail && typeof detail.body === "string" ? detail.body.trim() : "";
 
       return h(Modal, { onClose: props.onClose, label: skill.name + " 详情" },
         h("div", { className: "dsm-modalHead" },
           h("span", { className: "dsm-modalTitle" }, skill.name),
+          h("span", { className: "dsm-badgeSkill", style: { marginLeft: "8px" } }, "Skill"),
           h("div", { style: { marginLeft: "auto" } },
             IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null))),
         ),
@@ -538,6 +554,11 @@ window.__ModuleLoader__.load({
             : descriptionText
               ? renderMarkdown(descriptionText)
               : h("span", { className: "dsm-muted" }, "（该技能没有描述）")),
+          h("div", { className: "dsm-label" }, "文件内容"),
+          h("div", { className: "dsm-mdCard" }, bodyText
+            ? renderMarkdown(bodyText)
+            : h("span", { className: "dsm-muted" }, detail ? "（该技能没有正文）" : "加载中…")),
+          detail && detail.contentTruncated ? h("div", { className: "dsm-footNote" }, "文件较大，正文已截断显示。") : null,
           h("div", { className: "dsm-twoCol" },
             h("div", null,
               h("div", { className: "dsm-label" }, "范围"),
@@ -961,6 +982,7 @@ window.__ModuleLoader__.load({
         h("h1", { className: "dsm-title" }, "技能"),
 
         h("div", { className: "dsm-toolbar" },
+          h("div", { className: "dsm-toolbarLeft" },
           h(Dropdown, {
             className: "dsm-scope",
             buttonClassName: "dsm-scopeBtn",
@@ -986,6 +1008,7 @@ window.__ModuleLoader__.load({
           }),
           h("div", { className: "dsm-divider" }),
           h("div", { className: "dsm-meta" }, "技能 ", h("b", null, String(totals.skills || 0))),
+          ),
           h("div", { className: "dsm-searchWrap" },
             h(IconSearch, null),
             h("input", {
