@@ -249,10 +249,12 @@ test('realWithinRoot 拦住指向根外的符号链接', () => {
 })
 
 test('normalizeCwd 只接受绝对路径且限制长度', () => {
-  assert.equal(normalizeCwd('C:/Users/x/project'), 'C:/Users/x/project')
-  assert.equal(normalizeCwd('  C:/Users/x/project  '), 'C:/Users/x/project')
+  // 绝对路径的判定跟随平台：Windows 是盘符路径，其它平台是根路径。
+  const absolute = process.platform === 'win32' ? 'C:/Users/x/project' : '/home/x/project'
+  assert.equal(normalizeCwd(absolute), absolute)
+  assert.equal(normalizeCwd('  ' + absolute + '  '), absolute)
   assert.equal(normalizeCwd('relative/path'), '')
   assert.equal(normalizeCwd(''), '')
   assert.equal(normalizeCwd(undefined), '')
-  assert.equal(normalizeCwd('C:/' + 'x'.repeat(2000)), '')
+  assert.equal(normalizeCwd(absolute + '/' + 'x'.repeat(2000)), '')
 })
