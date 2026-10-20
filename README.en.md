@@ -80,6 +80,36 @@ The measured values and the item-by-item comparison live in chapter 6 of [docs/è
 
 ## Install, update, remove
 
+### Option 1: paste the GitHub link on the "Plugins" page (recommended)
+
+This repository ships a **plugin market index** (`market-index.json`) that points at the repository's git source, pinned to a commit. Enable the market bundle once, then paste the link below into the index source field on DSH's "Settings â†’ Plugins" page; the plugin shows up under the Discover tab and a single click installs it:
+
+```
+https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/market-index.json
+```
+
+Enable the market bundle (one time):
+
+```bash
+plugin_manager set_bundle --target "@deepseek-ai/dsh-experimental-plugin-market-bundle" --enabled true
+```
+
+### Option 2: install straight from the repository link
+
+The host's install-spec parser accepts a GitHub repository URL (it is a pnpm git dependency), so handing the repository link to the installer is enough:
+
+```bash
+# Tool (the plugin_manager tool is available in chat)
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager"
+
+# Command line (forwarded to pnpm inside the profile directory)
+dsh plugin --profile desktop add "https://github.com/bluechonk/dsh-skills-manager"
+```
+
+After the install the host reads the package's `dsh.bundle.patch`, inserts the loader row, and records the package in the profile's `dsh.profile.bundles` and `dependencies` (as `github:bluechonk/dsh-skills-manager`).
+
+### Local development
+
 ```bash
 # Install (the host resolves dependencies and writes the profile's bundle list)
 plugin_manager install_bundle   # target = absolute path of this directory

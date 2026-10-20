@@ -79,6 +79,38 @@ DeepSeek Harness 插件：在**设置页「模型」正下方**新增「技能�
 
 ## 安装、更新、卸载
 
+### 方式一：在「插件」页粘贴 GitHub 链接（推荐）
+
+本仓库自带**插件市场索引** `market-index.json`（指向本仓库的 git 源，锁定 commit）。启用市场 bundle 后，
+在 DSH「设置 → 插件」页的索引源输入框粘贴下面这条 GitHub 链接，Discover 标签里就会出现本插件，点「安装」即可：
+
+```
+https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/market-index.json
+```
+
+启用市场 bundle（一次性）：
+
+```bash
+plugin_manager set_bundle --target "@deepseek-ai/dsh-experimental-plugin-market-bundle" --enabled true
+```
+
+### 方式二：直接用仓库链接安装
+
+宿主的安装规格解析器接受 GitHub 仓库 URL（等价于 pnpm 的 git 依赖），因此直接给安装器仓库链接即可：
+
+```bash
+# 工具（对话里可用 plugin_manager 工具）
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager"
+
+# 命令行（转发给 profile 目录里的 pnpm）
+dsh plugin --profile desktop add "https://github.com/bluechonk/dsh-skills-manager"
+```
+
+安装后宿主读取本包的 `dsh.bundle.patch` 自动插入 loader 行，并把包名写进 profile 的
+`dsh.profile.bundles` 与 `dependencies`（值为 `github:bluechonk/dsh-skills-manager`）。
+
+### 本地开发
+
 ```bash
 # 安装（宿主负责解析依赖并写入 profile 的 bundles 列表）
 plugin_manager install_bundle   # target = 本目录绝对路径

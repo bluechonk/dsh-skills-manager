@@ -4,16 +4,36 @@
 
 ## 1.1.1
 
-作用域语义修正：工作区只显示该工作区的技能。
+作用域语义修正 + 支持从 GitHub 链接安装。
+
+### 新增
+
+- 仓库自带插件市场索引 `market-index.json`（git 源，锁定 commit）：在 DSH「设置 → 插件」页粘贴
+  `https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/market-index.json`，
+  Discover 标签里即可看到本插件并一键安装。
+- 宿主安装规格解析器本就接受 GitHub 仓库 URL，可直接
+  `plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager"` 安装。
 
 ### 调整
 
-- **工作区作用域互斥**：选中某个工作区后，只显示该工作区的 `<工作路径>/.dsh/skills` 与 `<工作路径>/.agents/skills`；全局 `~/.dsh/skills`、用户级 `~/.agents/skills` 不再混入。
-- **用户作用域**（用户 · 本机）只显示全局 `~/.dsh/skills`、用户级 `~/.agents/skills`、预设自定义目录与随包内置目录。
-- 宿主注册表返回的是「全局 + 当前作用域」的合并视图，现在按来源裁剪（工作区只留 `project-dsh` / `project-agents`，用户作用域只留非项目来源），根清单也随之只列当前作用域的根。
-- 切工作区仍只重扫该工作区（全局扫描结果缓存 30s，切回来直接复用）。
+- 版本号与 CHANGELOG 对齐（此前 package.json 仍为 1.0.0）；去掉 `private` 标记，便于后续发到 npm。
+- README 补齐两条安装路径（中英双份）。
 
 ### 验证
+
+实测：用 GitHub 链接安装成功（pnpm 从 codeload.github.com 拉取 tarball，装进 profile 的
+`node_modules/@bluechonk/dsh-skills-manager`，宿主自动读取 `dsh.bundle.patch` 插入 loader 行，
+profile 记录 `dependencies: { "@bluechonk/dsh-skills-manager": "github:bluechonk/dsh-skills-manager" }`），
+插件随即在设置页可用（`/dsh-skills-manager/state` 返回 36 个技能）。
+
+### 调整（作用域）
+
+- **工作区作用域互斥**：选中某个工作区后，只显示该工作区的 `<工作路径>/.dsh/skills` 与 `<工作路径>/.agents/skills`；全局 `~/.dsh/skills`、用户级 `~/.agents/skills` 不再混入。
+- **用户作用域**（用户 · 本机）只显示全局 `~/.dsh/skills`、用户级 `~/.agents/skills`、预设自定义目录与随包内置目录。
+- 宿主注册表返回的是「全局 + 当前作用域」的合并视图，现在按来源裁剪；根清单也随之只列当前作用域的根。
+- 切工作区仍只重扫该工作区（全局扫描结果缓存 30s，切回来直接复用）。
+
+### 验证（作用域）
 
 实测（桌面实例）：用户作用域 36 个技能（user-agents 24 + custom 4 + bundled 8）；工作区 modelmux 4 个（log-triage、mx-cli、reasonix-mx-test、repo-sync，仅来自该工作区的 `.agents/skills`），互不混入。回归单测同步更新，单测共 61 项全绿。
 
