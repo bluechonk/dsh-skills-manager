@@ -25,7 +25,7 @@ Package name, loader row id and client module id all use the `@bluechonk` scope;
 
 | Area | Description |
 |---|---|
-| Scope dropdown | "User · Local" shows the global skills; a "Workspaces" group lists every workspace, and picking one switches to that project's skill roots. **Switching workspaces only rescans that workspace's** `.dsh/skills` and `.agents/skills`; the global roots are reused from cache |
+| Scope dropdown | "User · Local" shows **only** the global `~/.dsh/skills`, the user-level `~/.agents/skills` and the preset built-ins; a "Workspaces" group lists every workspace, and picking one shows **only that workspace's** `<workspace>/.dsh/skills` and `<workspace>/.agents/skills` (global and user-level skills are not mixed in). Switching workspaces only rescans that workspace |
 | Skill count | "Skills N" at the top is the number of skills visible in the current scope |
 | Search | Filters live by name, description and path |
 | Installed list | Name + description + enable switch + delete button; the switch writes `disable-model-invocation` (native DSH semantics), deletion is limited to managed roots |

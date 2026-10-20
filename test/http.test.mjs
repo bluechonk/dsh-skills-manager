@@ -273,10 +273,10 @@ test('未登记工作区的 cwd 不会成为项目落点', async () => {
   }
 })
 
-test('切到工作区作用域：只读该工作区的 .dsh/skills 与 .agents/skills，全局技能仍在', async () => {
+test('切到工作区作用域：只显示该工作区的 .dsh/skills 与 .agents/skills，不含全局/用户级', async () => {
   const home = mkdtempSync(join(tmpdir(), 'dsm-scope-'))
   try {
-    // 全局根放一个技能
+    // 全局根（~/.dsh/skills 等价物）放一个技能
     const globalRoot = join(home, 'skills')
     mkdirSync(join(globalRoot, 'global-skill'), { recursive: true })
     writeFileSync(join(globalRoot, 'global-skill', 'SKILL.md'), '---\nname: global-skill\ndescription: 全局技能\n---\n', 'utf8')
@@ -288,21 +288,23 @@ test('切到工作区作用域：只读该工作区的 .dsh/skills 与 .agents/s
     writeFileSync(join(workspace, '.agents', 'skills', 'agent-skill', 'SKILL.md'), '---\nname: agent-skill\ndescription: 工作区 agents 技能\n---\n', 'utf8')
 
     const host = makeHost({ home, skillsRoot: globalRoot, workspaces: [{ id: 'w1', title: 'project', path: workspace }] })
-    // 全局作用域：只有全局技能
+    // 用户作用域：只有全局/用户级技能
     const globalState = (await call(host, '/dsh-skills-manager/state')).json()
     assert.equal(globalState.skills.some((skill) => skill.name === 'global-skill'), true)
     assert.equal(globalState.skills.some((skill) => skill.name === 'proj-skill'), false)
     assert.equal(globalState.skills.some((skill) => skill.name === 'agent-skill'), false)
 
-    // 工作区作用域：全局技能 + 该工作区的两个技能
+    // 工作区作用域：**只有**该工作区的两个技能，全局技能不出现
     const scoped = (await call(host, '/dsh-skills-manager/state', { url: '/dsh-skills-manager/state?cwd=' + encodeURIComponent(workspace) })).json()
     const names = scoped.skills.map((skill) => skill.name)
-    assert.equal(names.includes('global-skill'), true)
     assert.equal(names.includes('proj-skill'), true)
     assert.equal(names.includes('agent-skill'), true)
+    assert.equal(names.includes('global-skill'), false, '工作区作用域不应混入全局/用户级技能')
     // 项目技能标注正确的来源根
     assert.equal(scoped.skills.find((skill) => skill.name === 'proj-skill').source, 'project-dsh')
     assert.equal(scoped.skills.find((skill) => skill.name === 'agent-skill').source, 'project-agents')
+    // 根清单也只列当前作用域的根
+    assert.deepEqual(scoped.roots.map((root) => root.label).sort(), ['project-agents', 'project-dsh'])
   } finally {
     rmSync(home, { recursive: true, force: true })
   }
