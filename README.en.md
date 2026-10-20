@@ -82,21 +82,35 @@ The measured values and the item-by-item comparison live in chapter 6 of [docs/�
 
 ### Option 1: paste the GitHub link on the "Plugins" page (recommended)
 
+The "Plugins" page has an "**+ Add plugin**" button whose dialog opens with "enter the package name, the **GitHub repository address** or a local directory path" — paste the repository link below and press Install; the UI labels it a "Git repository":
+
+```
+https://github.com/bluechonk/dsh-skills-manager
+```
+
+The install records the package in the profile's `dependencies` (as `github:bluechonk/dsh-skills-manager`). If the profile does not list it as a bundle yet (`dsh.profile.bundles`), add one line so the profile composes it:
+
+```json
+"dsh": { "profile": { "bundles": ["@bluechonk/dsh-skills-manager"] } }
+```
+
+Then restart DSH: "Skills" shows up below "Models" in the settings navigation.
+
+### Option 2: plugin market index (browse and install with one click)
+
 This repository ships a **plugin market index** (`market-index.json`) that points at the repository's git source, pinned to a commit. Enable the market bundle once, then paste the link below into the index source field on DSH's "Settings → Plugins" page; the plugin shows up under the Discover tab and a single click installs it:
 
 ```
 https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/market-index.json
 ```
 
-Enable the market bundle (one time):
+Enable the market bundle (one time; pick a version compatible with the running DSH — the host refuses an incompatible one and names the version it expects):
 
 ```bash
 plugin_manager set_bundle --target "@deepseek-ai/dsh-experimental-plugin-market-bundle" --enabled true
 ```
 
-### Option 2: install straight from the repository link
-
-The host's install-spec parser accepts a GitHub repository URL (it is a pnpm git dependency), so handing the repository link to the installer is enough:
+### Option 3: tool and command line
 
 ```bash
 # Tool (the plugin_manager tool is available in chat)
@@ -106,7 +120,7 @@ plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-
 dsh plugin --profile desktop add "https://github.com/bluechonk/dsh-skills-manager"
 ```
 
-After the install the host reads the package's `dsh.bundle.patch`, inserts the loader row, and records the package in the profile's `dsh.profile.bundles` and `dependencies` (as `github:bluechonk/dsh-skills-manager`).
+The host's install-spec parser accepts a GitHub repository URL (it is a pnpm git dependency). After the install the host reads the package's `dsh.bundle.patch`, inserts the loader row, and records the package in the profile's `dsh.profile.bundles` and `dependencies`.
 
 ### Local development
 

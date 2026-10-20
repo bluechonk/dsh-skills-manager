@@ -17,14 +17,18 @@
 ### 调整
 
 - 版本号与 CHANGELOG 对齐（此前 package.json 仍为 1.0.0）；去掉 `private` 标记，便于后续发到 npm。
-- README 补齐两条安装路径（中英双份）。
+- README 补齐三条安装路径（中英双份）：「插件」页「+ 添加插件」粘 GitHub 链接、插件市场索引、工具与命令行。
 
 ### 验证
 
-实测：用 GitHub 链接安装成功（pnpm 从 codeload.github.com 拉取 tarball，装进 profile 的
-`node_modules/@bluechonk/dsh-skills-manager`，宿主自动读取 `dsh.bundle.patch` 插入 loader 行，
-profile 记录 `dependencies: { "@bluechonk/dsh-skills-manager": "github:bluechonk/dsh-skills-manager" }`），
-插件随即在设置页可用（`/dsh-skills-manager/state` 返回 36 个技能）。
+- 工具安装：pnpm 从 codeload.github.com 拉取 tarball 装进 profile 的 `node_modules/@bluechonk/dsh-skills-manager`，
+  宿主自动读取 `dsh.bundle.patch` 插入 loader 行，profile 记录
+  `dependencies: { "@bluechonk/dsh-skills-manager": "github:bluechonk/dsh-skills-manager" }` 与对应 bundle 行，
+  插件随即在设置页可用（`/dsh-skills-manager/state` 返回 36 个技能）。
+- 界面安装：在「插件」页点「+ 添加插件」，弹窗提示「输入插件的包名、GitHub 仓库地址或本地目录路径」，
+  粘贴仓库链接后界面识别为「Git 仓库」并进入「插件安装中…」，装完「已安装插件」列表出现本插件。
+- 市场索引：`market-index.json` 用 DSH 自带的 `parseMarketIndex` 校验通过，
+  解析出的安装目标为 `git+https://github.com/bluechonk/dsh-skills-manager.git#f0ffb1c`。
 
 ### 调整（作用域）
 
