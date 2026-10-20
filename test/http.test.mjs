@@ -42,8 +42,8 @@ function makeRequest(options = {}) {
 
 /** 搭一套宿主：临时技能根 + 可控的 loader/工作区。 */
 function makeHost(options = {}) {
-  const home = mkdtempSync(join(tmpdir(), 'dsm-http-'))
-  const skillsRoot = join(home, 'skills')
+  const home = options.home || mkdtempSync(join(tmpdir(), 'dsm-http-'))
+  const skillsRoot = options.skillsRoot || join(home, 'skills')
   mkdirSync(skillsRoot, { recursive: true })
   const workspaces = options.workspaces || []
   const routes = new Map()
@@ -270,5 +270,61 @@ test('未登记工作区的 cwd 不会成为项目落点', async () => {
     assert.equal(created.statusCode, 400)
   } finally {
     rmSync(host.home, { recursive: true, force: true })
+  }
+})
+
+test('切到工作区作用域：只读该工作区的 .dsh/skills 与 .agents/skills，全局技能仍在', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'dsm-scope-'))
+  try {
+    // 全局根放一个技能
+    const globalRoot = join(home, 'skills')
+    mkdirSync(join(globalRoot, 'global-skill'), { recursive: true })
+    writeFileSync(join(globalRoot, 'global-skill', 'SKILL.md'), '---\nname: global-skill\ndescription: 全局技能\n---\n', 'utf8')
+    // 工作区放两个技能：.dsh/skills 与 .agents/skills
+    const workspace = join(home, 'project')
+    mkdirSync(join(workspace, '.dsh', 'skills', 'proj-skill'), { recursive: true })
+    writeFileSync(join(workspace, '.dsh', 'skills', 'proj-skill', 'SKILL.md'), '---\nname: proj-skill\ndescription: 项目技能\n---\n', 'utf8')
+    mkdirSync(join(workspace, '.agents', 'skills', 'agent-skill'), { recursive: true })
+    writeFileSync(join(workspace, '.agents', 'skills', 'agent-skill', 'SKILL.md'), '---\nname: agent-skill\ndescription: 工作区 agents 技能\n---\n', 'utf8')
+
+    const host = makeHost({ home, skillsRoot: globalRoot, workspaces: [{ id: 'w1', title: 'project', path: workspace }] })
+    // 全局作用域：只有全局技能
+    const globalState = (await call(host, '/dsh-skills-manager/state')).json()
+    assert.equal(globalState.skills.some((skill) => skill.name === 'global-skill'), true)
+    assert.equal(globalState.skills.some((skill) => skill.name === 'proj-skill'), false)
+    assert.equal(globalState.skills.some((skill) => skill.name === 'agent-skill'), false)
+
+    // 工作区作用域：全局技能 + 该工作区的两个技能
+    const scoped = (await call(host, '/dsh-skills-manager/state', { url: '/dsh-skills-manager/state?cwd=' + encodeURIComponent(workspace) })).json()
+    const names = scoped.skills.map((skill) => skill.name)
+    assert.equal(names.includes('global-skill'), true)
+    assert.equal(names.includes('proj-skill'), true)
+    assert.equal(names.includes('agent-skill'), true)
+    // 项目技能标注正确的来源根
+    assert.equal(scoped.skills.find((skill) => skill.name === 'proj-skill').source, 'project-dsh')
+    assert.equal(scoped.skills.find((skill) => skill.name === 'agent-skill').source, 'project-agents')
+  } finally {
+    rmSync(home, { recursive: true, force: true })
+  }
+})
+
+test('同名技能以工作区那份为准（rank 更低者优先）', async () => {
+  const home = mkdtempSync(join(tmpdir(), 'dsm-dup-'))
+  try {
+    const globalRoot = join(home, 'skills')
+    mkdirSync(join(globalRoot, 'dup'), { recursive: true })
+    writeFileSync(join(globalRoot, 'dup', 'SKILL.md'), '---\nname: dup\ndescription: 全局那份\n---\n', 'utf8')
+    const workspace = join(home, 'project')
+    mkdirSync(join(workspace, '.dsh', 'skills', 'dup'), { recursive: true })
+    writeFileSync(join(workspace, '.dsh', 'skills', 'dup', 'SKILL.md'), '---\nname: dup\ndescription: 项目那份\n---\n', 'utf8')
+
+    const host = makeHost({ home, skillsRoot: globalRoot, workspaces: [{ id: 'w1', title: 'project', path: workspace }] })
+    const scoped = (await call(host, '/dsh-skills-manager/state', { url: '/dsh-skills-manager/state?cwd=' + encodeURIComponent(workspace) })).json()
+    const dup = scoped.skills.filter((skill) => skill.name === 'dup')
+    assert.equal(dup.length, 1)
+    assert.equal(dup[0].description, '项目那份')
+    assert.equal(dup[0].source, 'project-dsh')
+  } finally {
+    rmSync(home, { recursive: true, force: true })
   }
 })

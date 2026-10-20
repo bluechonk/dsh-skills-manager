@@ -841,11 +841,15 @@ window.__ModuleLoader__.load({
 
       const cwd = scope.kind === "project" ? scope.path : "";
 
-      const load = useCallback(() => {
+      const load = useCallback((useRefresh) => {
         const seq = requestSeq.current + 1;
         requestSeq.current = seq;
         setLoading(true);
-        apiGet("/state", cwd ? { cwd } : {})
+        const params = {};
+        if (cwd) params.cwd = cwd;
+        // 手动刷新时让宿主绕过缓存，强制重扫磁盘。
+        if (useRefresh) params.refresh = "1";
+        apiGet("/state", params)
           .then((payload) => {
             if (seq !== requestSeq.current) return;
             setState(payload);
@@ -1033,7 +1037,7 @@ window.__ModuleLoader__.load({
                   h(IconImport, null), h("span", null, "导入")),
               ],
             }),
-            IconButton({ className: "dsm-iconBtn", label: "刷新", onClick: load }, h(IconRefresh, null)),
+            IconButton({ className: "dsm-iconBtn", label: "刷新", onClick: () => load(true) }, h(IconRefresh, null)),
             h("button", { type: "button", className: "dsm-primary", onClick: () => setShowCreate(true) },
               h(IconPlus, null), h("span", null, "新建")),
           ),
