@@ -86,8 +86,7 @@ window.__ModuleLoader__.load({
       ".dsm-modalTitle{font-size:15px;font-weight:600}",
       ".dsm-modalBody{padding:16px 18px 20px;overflow:auto;display:flex;flex-direction:column;gap:10px}",
       ".dsm-label{font-size:12.5px;color:var(--dsw-alias-label-secondary)}",
-      ".dsm-descBox{max-height:220px;overflow:auto;border-radius:10px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);padding:12px 14px;font-size:13px;line-height:1.65;color:var(--dsw-alias-label-primary);word-break:break-word}",
-      ".dsm-files{white-space:pre-wrap;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px}",
+      ".dsm-mdScroll{max-height:210px;overflow:auto;padding-right:6px;font-size:13px;line-height:1.7;color:var(--dsw-alias-label-primary);word-break:break-word}",
       // —— Markdown 渲染 ——
       ".dsm-md-p{margin:0 0 8px}",
       ".dsm-md-p:last-child{margin-bottom:0}",
@@ -104,7 +103,7 @@ window.__ModuleLoader__.load({
       ".dsm-muted{color:var(--dsw-alias-label-secondary)}",
       ".dsm-twoCol{display:grid;grid-template-columns:1fr 1fr;gap:16px}",
       ".dsm-value{font-size:13.5px;margin-top:4px}",
-      ".dsm-pathRow{display:flex;align-items:center;gap:8px;border-radius:9px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);padding:8px 10px}",
+      ".dsm-pathRow{display:flex;align-items:center;gap:6px;margin-top:2px;min-width:0}",
       ".dsm-path{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-iconBtnSm{width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}",
       ".dsm-iconBtnSm:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2)}",
@@ -365,6 +364,18 @@ window.__ModuleLoader__.load({
     /* 详情弹窗                                                          */
     /* ---------------------------------------------------------------- */
 
+    /** 技能的作用范围：个人 / 项目名 / 内置。 */
+    function scopeTextOf(skill) {
+      const source = skill.source || "";
+      if (source === "project-dsh" || source === "project-agents") {
+        const parts = String(skill.rootPath || "").split(/[\\/]+/).filter(Boolean);
+        // 根目录形如 <projectRoot>/.dsh/skills，倒退两级即项目根，取其末段做名字。
+        return parts.length >= 3 ? parts[parts.length - 3] : "工作区";
+      }
+      if (source === "bundled" || source === "runtime") return "内置";
+      return "个人";
+    }
+
     function DetailModal(props) {
       const skill = props.skill;
       const [detail, setDetail] = useState(null);
@@ -384,12 +395,11 @@ window.__ModuleLoader__.load({
         if (path && navigator.clipboard) navigator.clipboard.writeText(path);
       };
 
-      const scopeText = props.rootTitle + (skill.rootPath ? " · " + skill.rootPath : "");
+      const scopeText = scopeTextOf(skill);
       const statusText = skill.invocation && skill.invocation.modelInvocable === false ? "已禁用" : "已启用";
       const descriptionText = (detail && detail.frontmatter && typeof detail.frontmatter.description === "string" && detail.frontmatter.description !== "")
         ? detail.frontmatter.description
         : skill.description || "";
-      const bodyText = detail && typeof detail.body === "string" ? detail.body.trim() : "";
 
       return h(Modal, { onClose: props.onClose },
         h("div", { className: "dsm-modalHead" },
@@ -399,7 +409,7 @@ window.__ModuleLoader__.load({
         ),
         h("div", { className: "dsm-modalBody" },
           h("div", { className: "dsm-label" }, "描述"),
-          h("div", { className: "dsm-descBox" }, error
+          h("div", { className: "dsm-mdScroll" }, error
             ? h("div", { className: "dsm-error" }, error)
             : descriptionText
               ? renderMarkdown(descriptionText)
@@ -416,21 +426,9 @@ window.__ModuleLoader__.load({
           ),
           h("div", { className: "dsm-label" }, "文件路径"),
           h("div", { className: "dsm-pathRow" },
-            h("code", { className: "dsm-path", title: (detail && detail.skill && detail.skill.path) || skill.path || "" }, (detail && detail.skill && detail.skill.path) || skill.path || "（内置技能，无本地文件）"),
+            h("code", { className: "dsm-path", title: skill.path || "" }, skill.path || "（内置技能，无本地文件）"),
             IconButton({ className: "dsm-iconBtnSm", label: "复制路径", onClick: copyPath }, h(IconCopy, null)),
           ),
-          bodyText
-            ? h("div", null,
-              h("div", { className: "dsm-label" }, "正文"),
-              h("div", { className: "dsm-descBox" }, renderMarkdown(bodyText)),
-            )
-            : null,
-          detail && detail.files && detail.files.length
-            ? h("div", null,
-              h("div", { className: "dsm-label" }, "文件清单（" + detail.files.length + "）"),
-              h("div", { className: "dsm-descBox dsm-files" }, detail.files.map((file) => file.rel).join("\n")),
-            )
-            : null,
         ),
       );
     }
