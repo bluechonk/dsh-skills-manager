@@ -50,8 +50,16 @@
     "agent-skills",
     "settings"
   ],
-  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/bluechonk/dsh-skills-manager.git"
+  },
+  "homepage": "https://github.com/bluechonk/dsh-skills-manager#readme",
+  "bugs": {
+    "url": "https://github.com/bluechonk/dsh-skills-manager/issues"
+  },
   "author": "BlueChonk",
+  "license": "MIT",
   "engines": {
     "node": ">=22.15.0"
   }
