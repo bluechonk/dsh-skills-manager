@@ -1,0 +1,41 @@
+{
+  "format": 1,
+  "title": {
+    "en": "bluechonk plugin market",
+    "zh": "bluechonk 插件市场"
+  },
+  "description": {
+    "en": "Personal plugin market for the DeepSeek Harness: install plugins straight from GitHub repositories.",
+    "zh": "DeepSeek Harness 的个人插件市场：直接从 GitHub 仓库安装插件。"
+  },
+  "plugins": [
+    {
+      "name": "@bluechonk/dsh-skills-manager",
+      "title": {
+        "en": "Skills Manager",
+        "zh": "技能管理器"
+      },
+      "description": {
+        "en": "Adds a Skills section right below Models in the settings page: browse and manage every skill the Harness has loaded (global ~/.dsh/skills, user-level ~/.agents/skills, and each workspace's .dsh/skills / .agents/skills), with scope switching, search, Markdown details, enable/disable, import, delete and open-folder.",
+        "zh": "在设置页「模型」正下方新增「技能」分区：集中展示并管理当前加载到的全部技能（全局 ~/.dsh/skills、用户级 ~/.agents/skills，以及各工作区的 .dsh/skills 与 .agents/skills），支持作用域切换、搜索、Markdown 详情、启停、导入、删除与打开目录。"
+      },
+      "icon": "https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/icon.svg",
+      "author": "bluechonk",
+      "homepage": "https://github.com/bluechonk/dsh-skills-manager",
+      "repository": {
+        "url": "https://github.com/bluechonk/dsh-skills-manager"
+      },
+      "versions": [
+        {
+          "version": "1.1.1",
+          "publishTimestamp": 1792509200,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/bluechonk/dsh-skills-manager",
+            "commit": "f0ffb1cbf466894a14ef5345fef6ae28df17aec3"
+          }
+        }
+      ]
+    }
+  ]
+}
