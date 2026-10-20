@@ -110,6 +110,9 @@ window.__ModuleLoader__.load({
       ".dsm-path{flex:1;min-width:0;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;color:var(--dsw-alias-label-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-iconBtnSm{width:26px;height:26px;flex:none;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:6px;background:transparent;color:var(--dsw-alias-label-secondary);cursor:pointer}",
       ".dsm-iconBtnSm:hover{color:var(--dsw-alias-label-primary);background:var(--dsw-alias-bg-layer-2)}",
+      // 文本按钮：图标按钮是 30px 方形，装不下「取消」这类文字
+      ".dsm-btnText{display:inline-flex;align-items:center;justify-content:center;height:30px;padding:0 14px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13.5px;white-space:nowrap;cursor:pointer}",
+      ".dsm-btnText:hover{background:var(--dsw-alias-bg-layer-2)}",
       // —— 导入弹窗 ——
       ".dsm-select{position:relative}",
       ".dsm-selectBtn{display:inline-flex;align-items:center;gap:6px;height:30px;padding:0 10px;border-radius:8px;border:1px solid var(--dsw-alias-border-l1);background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary);font:inherit;font-size:13px;cursor:pointer}",
@@ -787,7 +790,7 @@ window.__ModuleLoader__.load({
           error ? h("div", { className: "dsm-error" }, error) : null,
           h("div", { className: "dsm-footNote" }, "将创建到 " + (props.scopeKind === "project" ? "当前工作区的 .dsh/skills 目录" : "全局 ~/.dsh/skills 目录") + "，并生成一份最小可用的 SKILL.md。"),
           h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
-            h("button", { type: "button", className: "dsm-iconBtn", onClick: props.onClose }, h("span", { style: { padding: "0 6px" } }, "取消")),
+            h("button", { type: "button", className: "dsm-btnText", onClick: props.onClose }, "取消"),
             h("button", { type: "button", className: "dsm-primary", disabled: busy || name.trim() === "" || description.trim() === "", onClick: submit },
               h(IconPlus, null), h("span", null, "创建")),
           ),
@@ -1063,7 +1066,7 @@ window.__ModuleLoader__.load({
               ),
               h("div", { className: "dsm-footNote" }, "技能目录下的全部文件都会被移除，此操作不可撤销。"),
               h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
-                h("button", { type: "button", className: "dsm-iconBtn", onClick: () => setConfirmRemove(null) }, h("span", { style: { padding: "0 6px" } }, "取消")),
+                h("button", { type: "button", className: "dsm-btnText", onClick: () => setConfirmRemove(null) }, "取消"),
                 h("button", { type: "button", className: "dsm-primary", onClick: () => removeSkill(confirmRemove) },
                   h(IconTrash, null), h("span", null, "删除")),
               ),

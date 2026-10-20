@@ -86,10 +86,10 @@ plugin_manager remove_bundle --target "@bluechonk/dsh-skills-manager"
 
 ## 安全与边界
 
-- 写操作的目标一律由宿主按「已扫描到的技能」反查得到，**不接受客户端传入的任意绝对路径**。
-- 删除仅限受管根（`user-dsh` / `user-agents` / `project-dsh` / `project-agents`）；软链只删链接不删源；删除有二次确认。
-- 官方包内置技能（`node_modules` 内）拒绝改写与删除，避免破坏官方包。
-- 启停写的是 `disable-model-invocation`，这是 DSH 原生语义；`~/.agents/skills` 与其他 Agent 工具共享，该键对 Claude Code 等同样生效。
+- 写操作的目标一律由宿主按「已扫描到的技能」反查得到，**不接受客户端传入的任意绝对路径**；项目落点只认已登记工作区。
+- 删除仅限受管根（`user-dsh` / `user-agents` / `project-dsh` / `project-agents`）；软链只删链接不删源；删除前校验目标不等于受管根本身；界面上有二次确认并列出路径。
+- 官方包内置技能（`node_modules` 内，按真实路径判定）拒绝改写与删除，避免破坏官方包。
+- 启停写的是 `disable-model-invocation`，这是 DSH 原生语义；`~/.agents/skills` 与其他 Agent 工具共享，该键对 Claude Code 等同样生效。非 UTF-8（如 GBK）编码的文件会被拒绝改写，避免内容被写成乱码。
 - 插件不写任何持久化数据，仅在 profile 目录留一份 `skills-manager.log` 审计日志；不联网、不上传。
 
 ## 目录结构
@@ -111,11 +111,17 @@ dsh-skills-manager/
 ## 开发
 
 ```bash
-npm test          # node:test 纯函数单测
-npm run check     # 语法检查
+npm test          # node:test 单测（52 项：frontmatter / 根解析 / 目录扫描 / HTTP 层 / 客户端纯函数）
+npm run check     # 语法检查（lib 与 client）
 ```
 
-设计与验证细节见 [docs/设计与验证.md](docs/设计与验证.md)，版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+设计与验证细节见 [docs/设计与验证.md](docs/设计与验证.md)（含代码评审与修复记录），版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+
+## 仓库
+
+- GitHub：<https://github.com/bluechonk/dsh-skills-manager>
+- 插件标识：包名 / loader 行 id / client 模块 id 统一为 `@bluechonk/dsh-skills-manager`。
+- 安装：`plugin_manager install_bundle`，target 指向本目录；卸载：`plugin_manager remove_bundle --target @bluechonk/dsh-skills-manager`。
 
 ## 致谢与许可
 
