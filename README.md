@@ -1,6 +1,10 @@
 # dsh-skills-manager
 
+**中文** | [English](README.en.md)
+
 DeepSeek Harness 插件：在**设置页「模型」正下方**新增「技能」分区，集中展示并管理当前实际加载的全部 skill —— 全局 `~/.dsh/skills`、全局 `~/.agents/skills`、以及项目/工作区技能。
+
+界面跟随宿主语言设置：DSH 切到英文时，本分区所有文案（标题、按钮、提示、报错）自动切成英文。
 
 ![设置页技能分区](docs/images/01-设置页技能分区.png)
 
@@ -44,6 +48,12 @@ DeepSeek Harness 插件：在**设置页「模型」正下方**新增「技能�
 浅色主题（同一套布局，深浅两版都已核对）：
 
 ![浅色主题](docs/images/06-浅色主题.png)
+
+英文界面（DSH 切成英文时自动跟随）：
+
+![英文界面](docs/images/07-英文界面.png)
+
+![英文详情弹窗](docs/images/08-英文详情弹窗.png)
 
 ## 设计基准
 

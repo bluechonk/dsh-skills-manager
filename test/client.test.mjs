@@ -35,8 +35,48 @@ assert.ok(captured !== null && captured.__pure !== undefined, '桩物化失败�
 const P = captured.__pure
 
 test('__pure 导出面固定（防导出漂移）', () => {
-  assert.deepEqual(Object.keys(P).sort(), ['parseInline', 'parseMarkdown', 'scopeTextOf'])
+  assert.deepEqual(Object.keys(P).sort(), ['currentLocale', 'localizeError', 'normalizeLocaleId', 'parseInline', 'parseMarkdown', 'scopeTextOf', 'setLocale', 'strings'])
   assert.ok(Object.isFrozen(P))
+})
+
+test('中英词典键完全一致（缺一即视为漏翻）', () => {
+  const zh = Object.keys(P.strings.zh).sort()
+  const en = Object.keys(P.strings.en).sort()
+  assert.deepEqual(en, zh)
+  assert.ok(zh.length > 60, `词典条目过少：${zh.length}`)
+})
+
+test('中英词典没有空文案', () => {
+  for (const [locale, dict] of Object.entries(P.strings)) {
+    for (const [key, value] of Object.entries(dict)) {
+      assert.equal(typeof value, 'string', `${locale}.${key} 不是字符串`)
+      assert.notEqual(value.trim(), '', `${locale}.${key} 为空`)
+    }
+  }
+})
+
+test('normalizeLocaleId 把语言归到 zh / en', () => {
+  assert.equal(P.normalizeLocaleId('zh'), 'zh')
+  assert.equal(P.normalizeLocaleId('zh-CN'), 'zh')
+  assert.equal(P.normalizeLocaleId('en'), 'en')
+  assert.equal(P.normalizeLocaleId('en-US'), 'en')
+  assert.equal(P.normalizeLocaleId('fr'), '')
+  assert.equal(P.normalizeLocaleId(''), '')
+  assert.equal(P.normalizeLocaleId(undefined), '')
+})
+
+test('localizeError 按 code 查对应语言的文案', () => {
+  const zh = P.localizeError({ code: 'skill-not-found', params: { name: 'demo' } })
+  assert.equal(zh, '找不到技能：demo')
+  // 切到英文后，同一个 code 出英文文案
+  P.setLocale('en')
+  assert.equal(P.currentLocale(), 'en')
+  assert.equal(P.localizeError({ code: 'skill-not-found', params: { name: 'demo' } }), 'Skill not found: demo')
+  // 没有 code 时退回原文
+  assert.equal(P.localizeError({ message: 'raw message' }), 'raw message')
+  assert.equal(P.localizeError(null).length > 0, true)
+  P.setLocale('zh')
+  assert.equal(P.currentLocale(), 'zh')
 })
 
 test('parseInline 识别行内代码/粗体/斜体/删除线', () => {

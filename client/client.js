@@ -353,6 +353,14 @@ window.__ModuleLoader__.load({
     /* 数据访问                                                          */
     /* ---------------------------------------------------------------- */
 
+    /** 宿主返回的错误对象：带上 code/params，界面按 code 查本地化文案。 */
+    function makeError(payload, status) {
+      const error = new Error((payload && payload.error) || t("error.request-failed", { status }));
+      if (payload && payload.code) error.code = payload.code;
+      if (payload && payload.params) error.params = payload.params;
+      return error;
+    }
+
     /** 请求超时上限：宿主卡住时不让界面永远停在「加载中」。 */
     const REQUEST_TIMEOUT_MS = 10000;
 
@@ -363,10 +371,10 @@ window.__ModuleLoader__.load({
       try {
         const response = await fetch(API + path + query, { headers: { accept: "application/json" }, signal: controller.signal });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
+        if (!response.ok || payload.ok === false) throw makeError(payload, response.status);
         return payload;
       } catch (error) {
-        if (error && error.name === "AbortError") throw new Error("请求超时（10 秒），宿主无响应");
+        if (error && error.name === "AbortError") throw new Error(t("error.timeout"));
         throw error;
       } finally {
         clearTimeout(timer);
@@ -384,14 +392,282 @@ window.__ModuleLoader__.load({
           signal: controller.signal,
         });
         const payload = await response.json().catch(() => ({}));
-        if (!response.ok || payload.ok === false) throw new Error(payload.error || "请求失败：" + response.status);
+        if (!response.ok || payload.ok === false) throw makeError(payload, response.status);
         return payload;
       } catch (error) {
-        if (error && error.name === "AbortError") throw new Error("请求超时（10 秒），宿主无响应");
+        if (error && error.name === "AbortError") throw new Error(t("error.timeout"));
         throw error;
       } finally {
         clearTimeout(timer);
       }
+    }
+
+    /* ---------------------------------------------------------------- */
+    /* 国际化：内置 zh/en 词典，跟随宿主的语言设置                                */
+    /* ---------------------------------------------------------------- */
+
+    /** 文案词典。键名两边必须完全一致（由单测锁住）。 */
+    const STRINGS = {
+      zh: {
+        "section.title": "技能",
+        "section.installed": "已安装",
+        "section.builtin": "内置",
+        "toolbar.count": "技能 {n}",
+        "toolbar.search": "搜索技能...",
+        "scope.user": "用户 · 本机",
+        "scope.localSuffix": "· 本机",
+        "scope.group.workspaces": "工作区",
+        "scope.personal": "个人",
+        "scope.builtin": "内置",
+        "scope.workspace": "工作区",
+        "action.new": "新建",
+        "action.refresh": "刷新",
+        "action.import": "导入",
+        "action.more": "更多操作",
+        "action.create": "创建",
+        "action.cancel": "取消",
+        "action.delete": "删除",
+        "action.retry": "重试",
+        "action.close": "关闭",
+        "action.copyPath": "复制路径",
+        "action.copied": "已复制",
+        "action.copyFailed": "复制失败",
+        "action.rescan": "重新扫描",
+        "detail.description": "描述",
+        "detail.content": "文件内容",
+        "detail.scope": "范围",
+        "detail.status": "状态",
+        "detail.enabled": "已启用",
+        "detail.disabled": "已禁用",
+        "detail.path": "文件路径",
+        "detail.titleSuffix": "详情",
+        "detail.truncated": "文件较大，正文已截断显示。",
+        "detail.noDescription": "（该技能没有描述）",
+        "detail.noContent": "（该技能没有正文）",
+        "detail.builtinNoFile": "（内置技能，无本地文件）",
+        "import.title": "导入外部 Agent 技能",
+        "import.targetGlobal": "全局",
+        "import.targetProject": "项目",
+        "import.selectAll": "全选",
+        "import.selected": "已选 {n}/{total}",
+        "import.skillCount": "{n} 个技能",
+        "import.found": "发现 {n} 个可导入技能",
+        "import.mode.link": "软链",
+        "import.mode.copy": "直接复制",
+        "import.toGlobal": "导入到全局",
+        "import.toProject": "导入到项目",
+        "import.info.link": "软链：在目标根创建指向原目录的链接（Windows 使用 junction，免管理员权限）",
+        "import.info.copy": "直接复制：把技能目录完整复制到目标根",
+        "import.done": "已导入 {n} 个技能",
+        "import.failed": "，失败 {n} 个",
+        "import.selectSource": "选择 {label} 的全部技能",
+        "create.title": "新建技能",
+        "create.name": "名称（kebab-case，仅小写字母、数字与连字符）",
+        "create.namePlaceholder": "my-skill",
+        "create.description": "描述",
+        "create.descriptionPlaceholder": "这个技能解决什么问题",
+        "create.hint": "将创建到 {target}，并生成一份最小可用的 SKILL.md。",
+        "create.targetGlobal": "全局 ~/.dsh/skills 目录",
+        "create.targetProject": "当前工作区的 .dsh/skills 目录",
+        "delete.title": "删除技能",
+        "delete.question": "确定删除技能「{name}」？",
+        "delete.note": "技能目录下的全部文件都会被移除，此操作不可撤销。",
+        "state.loading": "加载中…",
+        "state.loadFailed": "加载失败：{error}",
+        "state.empty": "没有找到任何技能。",
+        "state.registryUnavailable": "技能注册表暂不可用，当前仅显示本地扫描结果。",
+        "switch.enable": "启用模型调用 {name}",
+        "aria.switch": "开关",
+        "aria.dialog": "对话框",
+        "root.userDsh": "全局 DSH",
+        "root.userAgents": "全局 Agents",
+        "root.projectDsh": "项目 DSH",
+        "root.projectAgents": "项目 Agents",
+        "root.custom": "自定义目录",
+        "root.bundled": "内置目录",
+        "root.runtime": "运行时",
+        "error.request-failed": "请求失败：{status}",
+        "error.timeout": "请求超时（10 秒），宿主无响应",
+        "error.internal-error": "内部错误",
+        "error.bad-json": "请求体不是合法 JSON",
+        "error.body-too-large": "请求体超过 1MB 上限",
+        "error.skill-not-found": "找不到技能：{name}",
+        "error.skill-not-writable": "该技能没有可改写的 SKILL.md",
+        "error.skill-readonly": "内置或运行时技能不可改写",
+        "error.not-utf8": "SKILL.md 不是 UTF-8 编码，已拒绝改写以免损坏内容",
+        "error.outside-root": "拒绝操作技能根之外的路径",
+        "error.delete-root-refused": "拒绝删除技能根目录本身",
+        "error.invalid-name": "技能名必须是 kebab-case（仅小写字母、数字与连字符）",
+        "error.empty-description": "描述不能为空",
+        "error.description-too-long": "描述过长（上限 500 字）",
+        "error.target-root-unavailable": "目标根不可用（项目落点必须来自已登记的工作区）",
+        "error.skill-exists": "技能已存在：{name}",
+        "error.target-exists": "目标已存在同名技能：{name}",
+        "error.unknown-source": "未知的外部来源：{source}",
+        "error.external-skill-not-found": "外部目录里找不到技能：{name}",
+        "error.no-local-dir": "该技能没有可打开的本地目录",
+        "error.dir-missing": "目录不存在：{path}",
+      },
+      en: {
+        "section.title": "Skills",
+        "section.installed": "Installed",
+        "section.builtin": "Built-in",
+        "toolbar.count": "Skills {n}",
+        "toolbar.search": "Search skills...",
+        "scope.user": "User · Local",
+        "scope.localSuffix": "· Local",
+        "scope.group.workspaces": "Workspaces",
+        "scope.personal": "Personal",
+        "scope.builtin": "Built-in",
+        "scope.workspace": "Workspace",
+        "action.new": "New",
+        "action.refresh": "Refresh",
+        "action.import": "Import",
+        "action.more": "More actions",
+        "action.create": "Create",
+        "action.cancel": "Cancel",
+        "action.delete": "Delete",
+        "action.retry": "Retry",
+        "action.close": "Close",
+        "action.copyPath": "Copy path",
+        "action.copied": "Copied",
+        "action.copyFailed": "Copy failed",
+        "action.rescan": "Rescan",
+        "detail.description": "Description",
+        "detail.content": "File content",
+        "detail.scope": "Scope",
+        "detail.status": "Status",
+        "detail.enabled": "Enabled",
+        "detail.disabled": "Disabled",
+        "detail.path": "File path",
+        "detail.titleSuffix": "Details",
+        "detail.truncated": "The file is large; the content is truncated.",
+        "detail.noDescription": "(This skill has no description)",
+        "detail.noContent": "(This skill has no content)",
+        "detail.builtinNoFile": "(Built-in skill, no local file)",
+        "import.title": "Import External Agent Skills",
+        "import.targetGlobal": "Global",
+        "import.targetProject": "Project",
+        "import.selectAll": "Select all",
+        "import.selected": "{n}/{total} selected",
+        "import.skillCount": "{n} skills",
+        "import.found": "{n} importable skills found",
+        "import.mode.link": "Symlink",
+        "import.mode.copy": "Copy",
+        "import.toGlobal": "Import to Global",
+        "import.toProject": "Import to Project",
+        "import.info.link": "Symlink: create a link to the source folder in the target root (junction on Windows, no admin rights needed)",
+        "import.info.copy": "Copy: copy the whole skill folder into the target root",
+        "import.done": "Imported {n} skills",
+        "import.failed": ", {n} failed",
+        "import.selectSource": "Select all skills from {label}",
+        "create.title": "New Skill",
+        "create.name": "Name (kebab-case: lowercase letters, digits and hyphens only)",
+        "create.namePlaceholder": "my-skill",
+        "create.description": "Description",
+        "create.descriptionPlaceholder": "What this skill solves",
+        "create.hint": "It will be created in {target} with a minimal SKILL.md.",
+        "create.targetGlobal": "the global ~/.dsh/skills folder",
+        "create.targetProject": "the current workspace's .dsh/skills folder",
+        "delete.title": "Delete Skill",
+        "delete.question": "Delete skill \u201c{name}\u201d?",
+        "delete.note": "All files in the skill folder will be removed. This cannot be undone.",
+        "state.loading": "Loading…",
+        "state.loadFailed": "Failed to load: {error}",
+        "state.empty": "No skills found.",
+        "state.registryUnavailable": "The skill registry is unavailable; only locally scanned results are shown.",
+        "switch.enable": "Enable model invocation: {name}",
+        "aria.switch": "Switch",
+        "aria.dialog": "Dialog",
+        "root.userDsh": "Global DSH",
+        "root.userAgents": "Global Agents",
+        "root.projectDsh": "Project DSH",
+        "root.projectAgents": "Project Agents",
+        "root.custom": "Custom folder",
+        "root.bundled": "Bundled folder",
+        "root.runtime": "Runtime",
+        "error.request-failed": "Request failed: {status}",
+        "error.timeout": "Request timed out (10s); the host did not respond",
+        "error.internal-error": "Internal error",
+        "error.bad-json": "The request body is not valid JSON",
+        "error.body-too-large": "The request body exceeds the 1MB limit",
+        "error.skill-not-found": "Skill not found: {name}",
+        "error.skill-not-writable": "This skill has no writable SKILL.md",
+        "error.skill-readonly": "Built-in or runtime skills cannot be modified",
+        "error.not-utf8": "SKILL.md is not UTF-8 encoded; refusing to modify it to avoid corrupting the content",
+        "error.outside-root": "Refusing to operate on paths outside the skill root",
+        "error.delete-root-refused": "Refusing to delete the skill root itself",
+        "error.invalid-name": "Skill name must be kebab-case (lowercase letters, digits and hyphens only)",
+        "error.empty-description": "Description is required",
+        "error.description-too-long": "Description is too long (max 500 characters)",
+        "error.target-root-unavailable": "Target root unavailable (a project target must come from a registered workspace)",
+        "error.skill-exists": "Skill already exists: {name}",
+        "error.target-exists": "A skill with the same name already exists at the target: {name}",
+        "error.unknown-source": "Unknown external source: {source}",
+        "error.external-skill-not-found": "Skill not found in the external folder: {name}",
+        "error.no-local-dir": "This skill has no local folder to open",
+        "error.dir-missing": "Folder not found: {path}",
+      },
+    };
+
+    /** 根标签 → 展示名（由客户端本地化，不依赖宿主的中文标题）。 */
+    const ROOT_TITLE_KEYS = {
+      "user-dsh": "root.userDsh",
+      "user-agents": "root.userAgents",
+      "project-dsh": "root.projectDsh",
+      "project-agents": "root.projectAgents",
+      custom: "root.custom",
+      bundled: "root.bundled",
+      runtime: "root.runtime",
+    };
+
+    function rootTitleOf(source) {
+      const key = ROOT_TITLE_KEYS[source];
+      return key ? t(key) : String(source || "");
+    }
+
+    /** 当前语言与订阅者。 */
+    const localeState = { active: "zh" };
+    const localeListeners = new Set();
+
+    /** 归一化语言 id：zh* → zh，其余按前缀判定为 en。 */
+    function normalizeLocaleId(raw) {
+      const value = String(raw || "").toLowerCase();
+      if (value.startsWith("zh")) return "zh";
+      if (value.startsWith("en")) return "en";
+      return "";
+    }
+
+    /** 切换语言并通知订阅者。 */
+    function setLocale(next) {
+      const id = normalizeLocaleId(next);
+      if (!id || id === localeState.active) return;
+      localeState.active = id;
+      for (const listener of [...localeListeners]) listener();
+    }
+
+    /** 取文案：{n} 之类的占位符用 params 填充。 */
+    function t(key, params) {
+      const dict = STRINGS[localeState.active] || STRINGS.zh;
+      const fallback = STRINGS.zh[key];
+      let value = dict[key] !== undefined ? dict[key] : fallback;
+      if (value === undefined) return key;
+      if (params) {
+        for (const name of Object.keys(params)) {
+          value = value.split("{" + name + "}").join(String(params[name]));
+        }
+      }
+      return value;
+    }
+
+    /** 宿主返回的错误：按 code 查本地化文案，没有 code 就退回原文。 */
+    function localizeError(error) {
+      if (!error) return t("error.internal-error");
+      const code = error.code ? String(error.code) : "";
+      if (code && STRINGS.zh["error." + code] !== undefined) {
+        return t("error." + code, error.params || {});
+      }
+      return error.message || t("error.internal-error");
     }
 
     /* ---------------------------------------------------------------- */
@@ -405,7 +681,7 @@ window.__ModuleLoader__.load({
         className: "dsm-switch",
         role: "switch",
         "aria-checked": on ? "true" : "false",
-        "aria-label": props.label || "开关",
+        "aria-label": props.label || t("aria.switch"),
         "data-on": on ? "true" : "false",
         disabled: props.disabled || false,
         onClick: (event) => { event.stopPropagation(); props.onChange(!on); },
@@ -482,7 +758,7 @@ window.__ModuleLoader__.load({
         className: "dsm-modal" + (props.modalClassName ? " " + props.modalClassName : ""),
         role: "dialog",
         "aria-modal": "true",
-        "aria-label": props.label || "对话框",
+        "aria-label": props.label || t("aria.dialog"),
         tabIndex: -1,
         ref: ref,
       }, props.children));
@@ -498,10 +774,10 @@ window.__ModuleLoader__.load({
       if (source === "project-dsh" || source === "project-agents") {
         const parts = String(skill.rootPath || "").split(/[\\/]+/).filter(Boolean);
         // 根目录形如 <projectRoot>/.dsh/skills，倒退两级即项目根，取其末段做名字。
-        return parts.length >= 3 ? parts[parts.length - 3] : "工作区";
+        return parts.length >= 3 ? parts[parts.length - 3] : t("scope.workspace");
       }
-      if (source === "bundled" || source === "runtime") return "内置";
-      return "个人";
+      if (source === "bundled" || source === "runtime") return t("scope.builtin");
+      return t("scope.personal");
     }
 
     function DetailModal(props) {
@@ -516,7 +792,7 @@ window.__ModuleLoader__.load({
         setCopied(null);
         apiPost("/body", { name: skill.name, cwd: props.cwd })
           .then((payload) => { if (alive) setDetail(payload); })
-          .catch((err) => { if (alive) setError(String(err && err.message ? err.message : err)); });
+          .catch((err) => { if (alive) setError(localizeError(err)); });
         return () => { alive = false; };
       }, [skill.name, props.cwd]);
 
@@ -534,13 +810,13 @@ window.__ModuleLoader__.load({
       };
 
       const scopeText = scopeTextOf(skill);
-      const statusText = skill.invocation && skill.invocation.modelInvocable === false ? "已禁用" : "已启用";
+      const statusText = skill.invocation && skill.invocation.modelInvocable === false ? t("detail.disabled") : t("detail.enabled");
       const descriptionText = (detail && detail.frontmatter && typeof detail.frontmatter.description === "string" && detail.frontmatter.description !== "")
         ? detail.frontmatter.description
         : skill.description || "";
       const bodyText = detail && typeof detail.body === "string" ? detail.body.trim() : "";
 
-      return h(Modal, { onClose: props.onClose, label: skill.name + " 详情" },
+      return h(Modal, { onClose: props.onClose, label: skill.name + " " + t("detail.titleSuffix") },
         h("div", { className: "dsm-modalHead" },
           h("span", { className: "dsm-modalTitle" }, skill.name),
           h("span", { className: "dsm-badgeSkill", style: { marginLeft: "8px" } }, "Skill"),
@@ -548,31 +824,31 @@ window.__ModuleLoader__.load({
             IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null))),
         ),
         h("div", { className: "dsm-modalBody" },
-          h("div", { className: "dsm-label" }, "描述"),
+          h("div", { className: "dsm-label" }, t("detail.description")),
           h("div", { className: "dsm-mdScroll" }, error
             ? h("div", { className: "dsm-error" }, error)
             : descriptionText
               ? renderMarkdown(descriptionText)
-              : h("span", { className: "dsm-muted" }, "（该技能没有描述）")),
-          h("div", { className: "dsm-label" }, "文件内容"),
+              : h("span", { className: "dsm-muted" }, t("detail.noDescription"))),
+          h("div", { className: "dsm-label" }, t("detail.content")),
           h("div", { className: "dsm-mdCard" }, bodyText
             ? renderMarkdown(bodyText)
-            : h("span", { className: "dsm-muted" }, detail ? "（该技能没有正文）" : "加载中…")),
-          detail && detail.contentTruncated ? h("div", { className: "dsm-footNote" }, "文件较大，正文已截断显示。") : null,
+            : h("span", { className: "dsm-muted" }, detail ? t("detail.noContent") : t("state.loading"))),
+          detail && detail.contentTruncated ? h("div", { className: "dsm-footNote" }, t("detail.truncated")) : null,
           h("div", { className: "dsm-twoCol" },
             h("div", null,
-              h("div", { className: "dsm-label" }, "范围"),
+              h("div", { className: "dsm-label" }, t("detail.scope")),
               h("div", { className: "dsm-value" }, scopeText),
             ),
             h("div", null,
-              h("div", { className: "dsm-label" }, "状态"),
+              h("div", { className: "dsm-label" }, t("detail.status")),
               h("div", { className: "dsm-value" }, statusText),
             ),
           ),
-          h("div", { className: "dsm-label" }, "文件路径"),
+          h("div", { className: "dsm-label" }, t("detail.path")),
           h("div", { className: "dsm-pathRow" },
-            h("code", { className: "dsm-path", title: skill.path || "" }, skill.path || "（内置技能，无本地文件）"),
-            IconButton({ className: "dsm-iconBtnSm", label: copied === null ? "复制路径" : copied ? "已复制" : "复制失败", onClick: copyPath }, h(IconCopy, null)),
+            h("code", { className: "dsm-path", title: skill.path || "" }, skill.path || t("detail.builtinNoFile")),
+            IconButton({ className: "dsm-iconBtnSm", label: copied === null ? t("action.copyPath") : copied ? t("action.copied") : t("action.copyFailed"), onClick: copyPath }, h(IconCopy, null)),
           ),
         ),
       );
@@ -599,7 +875,7 @@ window.__ModuleLoader__.load({
         setError(null);
         apiGet("/external")
           .then((payload) => { if (!alive) return; setData(payload); setSelected(new Set()); })
-          .catch((err) => { if (!alive) return; setError(String(err && err.message ? err.message : err)); });
+          .catch((err) => { if (!alive) return; setError(localizeError(err)); });
         return () => { alive = false; };
       }, []);
 
@@ -656,37 +932,37 @@ window.__ModuleLoader__.load({
             await apiPost("/import", { source: skill.source, name: skill.name, mode, target, cwd: props.cwd });
             done += 1;
           } catch (err) {
-            failures.push(skill.name + "：" + String(err && err.message ? err.message : err));
+            failures.push(skill.name + "：" + localizeError(err));
           }
         }
-        setResult("已导入 " + done + " 个技能" + (failures.length > 0 ? "，失败 " + failures.length + " 个" : ""));
+        setResult(t("import.done", { n: done }) + (failures.length > 0 ? t("import.failed", { n: failures.length }) : ""));
         if (failures.length > 0) setError(failures.join("；"));
         setBusy(false);
         load();
         props.onImported();
       };
 
-      const targetLabel = target === "project" ? "导入到项目" : "导入到全局";
+      const targetLabel = target === "project" ? t("import.toProject") : t("import.toGlobal");
 
-      return h(Modal, { onClose: props.onClose, modalClassName: "dsm-importModal", label: "导入外部 Agent 技能" },
+      return h(Modal, { onClose: props.onClose, modalClassName: "dsm-importModal", label: t("import.title") },
         h("div", { className: "dsm-modalHead" },
-          h("span", { className: "dsm-modalTitle" }, "导入外部 Agent 技能"),
+          h("span", { className: "dsm-modalTitle" }, t("import.title")),
           h("div", { style: { marginLeft: "auto", display: "flex", alignItems: "center", gap: "8px" } },
             h(Dropdown, {
               buttonClassName: "dsm-selectBtn",
-              trigger: h("span", null, target === "project" ? "项目" : "全局"),
+              trigger: h("span", null, target === "project" ? t("import.targetProject") : t("import.targetGlobal")),
               children: (close) => [
                 h("button", { key: "global", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setTarget("global"); close(); } },
-                  h("span", null, "全局"),
+                  h("span", null, t("import.targetGlobal")),
                   target === "global" ? h(IconCheck, null) : null),
                 canProject
                   ? h("button", { key: "project", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setTarget("project"); close(); } },
-                    h("span", null, "项目"),
+                    h("span", null, t("import.targetProject")),
                     target === "project" ? h(IconCheck, null) : null)
                   : null,
               ],
             }),
-            IconButton({ className: "dsm-iconBtnSm", label: "重新扫描", onClick: load }, h(IconRefresh, null)),
+            IconButton({ className: "dsm-iconBtnSm", label: t("action.rescan"), onClick: load }, h(IconRefresh, null)),
             IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null)),
           ),
         ),
@@ -694,8 +970,8 @@ window.__ModuleLoader__.load({
           h("div", { className: "dsm-importCard" },
             h("div", { className: "dsm-selectAll" },
               h("input", { type: "checkbox", className: "dsm-check", checked: allChecked, "aria-label": "全选可导入技能", onChange: toggleAll }),
-              h("span", null, "全选"),
-              h("span", { className: "dsm-selCount" }, "已选 " + selected.size + "/" + importable.length),
+              h("span", null, t("import.selectAll")),
+              h("span", { className: "dsm-selCount" }, t("import.selected", { n: selected.size, total: importable.length })),
             ),
             sources.map((source) => {
               const sourceItems = (source.skills || []).filter((skill) => !skill.installed);
@@ -712,7 +988,7 @@ window.__ModuleLoader__.load({
                   type: "checkbox",
                   className: "dsm-check",
                   checked: sourceChecked,
-                  "aria-label": "选择 " + source.label + " 的全部技能",
+                  "aria-label": t("import.selectSource", { label: source.label }),
                   onClick: (event) => event.stopPropagation(),
                   onChange: () => toggleSource(source),
                 }),
@@ -720,7 +996,7 @@ window.__ModuleLoader__.load({
                   h("div", { className: "dsm-sourceName", title: source.label }, source.label),
                   h("div", { className: "dsm-sourcePath", title: source.path }, source.path),
                 ),
-                h("div", { className: "dsm-sourceCount" }, source.count + " 个技能"),
+                h("div", { className: "dsm-sourceCount" }, t("import.skillCount", { n: source.count })),
                 h(IconChevronRight, null),
               );
             }),
@@ -730,19 +1006,19 @@ window.__ModuleLoader__.load({
         ),
         h("div", { className: "dsm-importFoot" },
           h("div", { className: "dsm-footLeft" },
-            h("span", null, "发现 " + importable.length + " 个可导入技能"),
+            h("span", null, t("import.found", { n: importable.length })),
             h(Dropdown, {
               buttonClassName: "dsm-selectBtn",
               menuUp: true,
-              trigger: h("span", null, mode === "link" ? "软链" : "直接复制"),
+              trigger: h("span", null, mode === "link" ? t("import.mode.link") : t("import.mode.copy")),
               children: (close) => [
                 h("button", { key: "link", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setMode("link"); close(); } },
-                  h("span", null, "软链"), mode === "link" ? h(IconCheck, null) : null),
+                  h("span", null, t("import.mode.link")), mode === "link" ? h(IconCheck, null) : null),
                 h("button", { key: "copy", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { setMode("copy"); close(); } },
-                  h("span", null, "直接复制"), mode === "copy" ? h(IconCheck, null) : null),
+                  h("span", null, t("import.mode.copy")), mode === "copy" ? h(IconCheck, null) : null),
               ],
             }),
-            h(IconInfo, { title: mode === "link" ? "软链：在目标根创建指向原目录的链接（Windows 使用 junction，免管理员权限）" : "直接复制：把技能目录完整复制到目标根" }),
+            h(IconInfo, { title: mode === "link" ? t("import.info.link") : t("import.info.copy") }),
           ),
           h("div", { className: "dsm-footRight" },
             h("button", { type: "button", className: "dsm-primary", disabled: busy || selected.size === 0, onClick: doImport },
@@ -774,7 +1050,7 @@ window.__ModuleLoader__.load({
           props.onCreated();
           props.onClose();
         } catch (err) {
-          setError(String(err && err.message ? err.message : err));
+          setError(localizeError(err));
         } finally {
           submitting.current = false;
           setBusy(false);
@@ -783,17 +1059,17 @@ window.__ModuleLoader__.load({
 
       return h(Modal, { onClose: props.onClose },
         h("div", { className: "dsm-modalHead" },
-          h("span", { className: "dsm-modalTitle" }, "新建技能"),
+          h("span", { className: "dsm-modalTitle" }, t("create.title")),
           h("div", { style: { marginLeft: "auto" } },
             IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null))),
         ),
         h("div", { className: "dsm-modalBody" },
           h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, "名称（kebab-case，仅小写字母、数字与连字符）"),
+            h("div", { className: "dsm-label" }, t("create.name")),
             h("input", {
               className: "dsm-input",
               value: name,
-              placeholder: "my-skill",
+              placeholder: t("create.namePlaceholder"),
               maxLength: 64,
               onChange: (event) => setName(event.target.value),
             }),
@@ -803,17 +1079,17 @@ window.__ModuleLoader__.load({
             h("textarea", {
               className: "dsm-textarea",
               value: description,
-              placeholder: "这个技能解决什么问题",
+              placeholder: t("create.descriptionPlaceholder"),
               maxLength: 500,
               onChange: (event) => setDescription(event.target.value),
             }),
           ),
           error ? h("div", { className: "dsm-error" }, error) : null,
-          h("div", { className: "dsm-footNote" }, "将创建到 " + (props.scopeKind === "project" ? "当前工作区的 .dsh/skills 目录" : "全局 ~/.dsh/skills 目录") + "，并生成一份最小可用的 SKILL.md。"),
+          h("div", { className: "dsm-footNote" }, t("create.hint", { target: props.scopeKind === "project" ? t("create.targetProject") : t("create.targetGlobal") })),
           h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
-            h("button", { type: "button", className: "dsm-btnText", onClick: props.onClose }, "取消"),
+            h("button", { type: "button", className: "dsm-btnText", onClick: props.onClose }, t("action.cancel")),
             h("button", { type: "button", className: "dsm-primary", disabled: busy || name.trim() === "" || description.trim() === "", onClick: submit },
-              h(IconPlus, null), h("span", null, "创建")),
+              h(IconPlus, null), h("span", null, t("action.create"))),
           ),
         ),
       );
@@ -826,6 +1102,7 @@ window.__ModuleLoader__.load({
     const WRITABLE_ROOT_KINDS = new Set(["global", "project", "custom"]);
 
     function Panel() {
+      const [, setLocaleTick] = useState(0);
       const [state, setState] = useState(null);
       const [error, setError] = useState(null);
       const [loading, setLoading] = useState(true);
@@ -857,7 +1134,7 @@ window.__ModuleLoader__.load({
           })
           .catch((err) => {
             if (seq !== requestSeq.current) return;
-            setError(String(err && err.message ? err.message : err));
+            setError(localizeError(err));
           })
           .finally(() => {
             if (seq !== requestSeq.current) return;
@@ -871,6 +1148,13 @@ window.__ModuleLoader__.load({
       useEffect(() => { loadRef.current = load; }, [load]);
 
       useEffect(() => { load(); }, [load]);
+
+      // 语言切换：重新渲染，界面文案跟着宿主语言走。
+      useEffect(() => {
+        const listener = () => setLocaleTick((value) => value + 1);
+        localeListeners.add(listener);
+        return () => { localeListeners.delete(listener); };
+      }, []);
 
       const skills = (state && state.skills) || [];
       const totals = (state && state.totals) || { skills: 0, installed: 0 };
@@ -918,7 +1202,7 @@ window.__ModuleLoader__.load({
         return [...groups.entries()];
       }, [builtin]);
 
-      const scopeLabel = scope.kind === "project" ? scope.title + " · 本机" : "用户 · 本机";
+      const scopeLabel = scope.kind === "project" ? scope.title + " " + t("scope.localSuffix") : t("scope.user");
 
       const toggleSkill = async (skill, next) => {
         setNotice(null);
@@ -926,7 +1210,7 @@ window.__ModuleLoader__.load({
           await apiPost("/toggle", { name: skill.name, disabled: !next, cwd });
           loadRef.current();
         } catch (err) {
-          setNotice(String(err && err.message ? err.message : err));
+          setNotice(localizeError(err));
         }
       };
 
@@ -937,7 +1221,7 @@ window.__ModuleLoader__.load({
           setConfirmRemove(null);
           loadRef.current();
         } catch (err) {
-          setNotice(String(err && err.message ? err.message : err));
+          setNotice(localizeError(err));
         }
       };
 
@@ -946,7 +1230,7 @@ window.__ModuleLoader__.load({
         try {
           await apiPost("/reveal", { name: skill.name, cwd });
         } catch (err) {
-          setNotice(String(err && err.message ? err.message : err));
+          setNotice(localizeError(err));
         }
       };
 
@@ -972,7 +1256,7 @@ window.__ModuleLoader__.load({
             h("div", { className: "dsm-desc", title: skill.description }, skill.description || "（无描述）"),
           ),
           writable
-            ? h(Switch, { on: enabled, label: "启用模型调用 " + skill.name, onChange: (next) => toggleSkill(skill, next) })
+            ? h(Switch, { on: enabled, label: t("switch.enable", { name: skill.name }), onChange: (next) => toggleSkill(skill, next) })
             : h("span", { className: "dsm-badge" }, "只读"),
           writable
             ? IconButton({ className: "dsm-trash", label: "删除 " + skill.name, onClick: () => setConfirmRemove(skill) }, h(IconTrash, null))
@@ -983,7 +1267,7 @@ window.__ModuleLoader__.load({
       };
 
       return h("div", { className: "dsm-root" },
-        h("h1", { className: "dsm-title" }, "技能"),
+        h("h1", { className: "dsm-title" }, t("section.title")),
 
         h("div", { className: "dsm-toolbar" },
           h("div", { className: "dsm-toolbarLeft" },
@@ -1000,32 +1284,32 @@ window.__ModuleLoader__.load({
                 type: "button",
                 className: "dsm-menuItem",
                 onClick: () => { setScope({ kind: "global", path: "", title: "" }); close(); },
-              }, h(IconMonitor, null), h("span", null, "用户 · 本机"), scope.kind === "global" ? h(IconCheck, null) : null),
-              h("div", { key: "label", className: "dsm-menuLabel" }, "工作区"),
+              }, h(IconMonitor, null), h("span", null, t("scope.user")), scope.kind === "global" ? h(IconCheck, null) : null),
+              h("div", { key: "label", className: "dsm-menuLabel" }, t("scope.group.workspaces")),
               ((state && state.workspaces) || []).map((workspace) => h("button", {
                 key: workspace.id,
                 type: "button",
                 className: "dsm-menuItem",
                 onClick: () => { setScope({ kind: "project", path: workspace.path, title: workspace.title }); close(); },
-              }, h(IconFolder, null), h("span", null, workspace.title + " · 本机"), scope.path === workspace.path ? h(IconCheck, null) : null)),
+              }, h(IconFolder, null), h("span", null, workspace.title + " " + t("scope.localSuffix")), scope.path === workspace.path ? h(IconCheck, null) : null)),
             ],
           }),
           h("div", { className: "dsm-divider" }),
-          h("div", { className: "dsm-meta" }, "技能 ", h("b", null, String(totals.skills || 0))),
+          h("div", { className: "dsm-meta" }, t("toolbar.count", { n: totals.skills || 0 })),
           ),
           h("div", { className: "dsm-searchWrap" },
             h(IconSearch, null),
             h("input", {
               className: "dsm-search",
               value: search,
-              placeholder: "搜索技能...",
+              placeholder: t("toolbar.search"),
               onChange: (event) => setSearch(event.target.value),
             }),
           ),
         ),
 
         h("div", { className: "dsm-sectionHead" },
-          h("div", { className: "dsm-sectionTitle" }, "已安装", h("span", { className: "dsm-sectionCount" }, String(installed.length))),
+          h("div", { className: "dsm-sectionTitle" }, t("section.installed"), h("span", { className: "dsm-sectionCount" }, String(installed.length))),
           h("div", { className: "dsm-actions" },
             h(Dropdown, {
               buttonClassName: "dsm-iconBtn",
@@ -1034,30 +1318,30 @@ window.__ModuleLoader__.load({
               menuRight: false,
               children: (close) => [
                 h("button", { key: "import", type: "button", className: "dsm-menuItem", role: "menuitem", onClick: () => { close(); setShowImport(true); } },
-                  h(IconImport, null), h("span", null, "导入")),
+                  h(IconImport, null), h("span", null, t("action.import"))),
               ],
             }),
-            IconButton({ className: "dsm-iconBtn", label: "刷新", onClick: () => load(true) }, h(IconRefresh, null)),
+            IconButton({ className: "dsm-iconBtn", label: t("action.refresh"), onClick: () => load(true) }, h(IconRefresh, null)),
             h("button", { type: "button", className: "dsm-primary", onClick: () => setShowCreate(true) },
-              h(IconPlus, null), h("span", null, "新建")),
+              h(IconPlus, null), h("span", null, t("action.new"))),
           ),
         ),
 
         notice ? h("div", { className: "dsm-error" }, notice) : null,
         // 刷新失败也要说出来：只在「还没有任何数据」时才显示错误，等于把刷新失败静默吞掉。
         error && state ? h("div", { className: "dsm-error" }, "刷新失败：" + error) : null,
-        state && state.registryError ? h("div", { className: "dsm-footNote" }, "技能注册表暂不可用，当前仅显示本地扫描结果。") : null,
+        state && state.registryError ? h("div", { className: "dsm-footNote" }, t("state.registryUnavailable")) : null,
 
         loading && !state
-          ? h("div", { className: "dsm-state" }, "加载中…")
+          ? h("div", { className: "dsm-state" }, t("state.loading"))
           : error && !state
             ? h("div", { className: "dsm-state" },
-              h("div", null, "加载失败：" + error),
+              h("div", null, t("state.loadFailed", { error: error })),
               h("div", { style: { marginTop: "10px" } },
                 h("button", { type: "button", className: "dsm-primary", onClick: load }, h("span", null, "重试"))),
             )
             : installed.length === 0 && builtin.length === 0
-              ? h("div", { className: "dsm-state" }, "没有找到任何技能。")
+              ? h("div", { className: "dsm-state" }, t("state.empty"))
               : null,
 
         installed.length > 0
@@ -1067,10 +1351,10 @@ window.__ModuleLoader__.load({
         builtinGroups.length > 0
           ? h("div", null,
             h("div", { className: "dsm-sectionHead" },
-              h("div", { className: "dsm-sectionTitle" }, "内置", h("span", { className: "dsm-sectionCount" }, String(builtin.length))),
+              h("div", { className: "dsm-sectionTitle" }, t("section.builtin"), h("span", { className: "dsm-sectionCount" }, String(builtin.length))),
             ),
             builtinGroups.map(([source, group]) => h("div", { key: source },
-              h("div", { className: "dsm-groupTitle" }, (rootTitle.get(source) || source) + " · " + group.length),
+              h("div", { className: "dsm-groupTitle" }, rootTitleOf(source) + " · " + group.length),
               h("div", { className: "dsm-list" }, group.map(renderRow)),
             )),
           )
@@ -1080,22 +1364,22 @@ window.__ModuleLoader__.load({
         showImport ? h(ImportModal, { cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: () => loadRef.current() }) : null,
         showCreate ? h(CreateModal, { cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: () => loadRef.current() }) : null,
         confirmRemove
-          ? h(Modal, { onClose: () => setConfirmRemove(null), label: "删除技能" },
+          ? h(Modal, { onClose: () => setConfirmRemove(null), label: t("delete.title") },
             h("div", { className: "dsm-modalHead" },
               h("span", { className: "dsm-modalTitle" }, "删除技能"),
               h("div", { style: { marginLeft: "auto" } },
                 IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: () => setConfirmRemove(null) }, h(IconClose, null))),
             ),
             h("div", { className: "dsm-modalBody" },
-              h("div", null, "确定删除技能「", h("b", null, confirmRemove.name), "」？"),
+              h("div", null, t("delete.question", { name: confirmRemove.name })),
               h("div", { className: "dsm-pathRow", style: { marginTop: "8px" } },
                 h("code", { className: "dsm-path", title: confirmRemove.path || "" }, confirmRemove.path || ""),
               ),
-              h("div", { className: "dsm-footNote" }, "技能目录下的全部文件都会被移除，此操作不可撤销。"),
+              h("div", { className: "dsm-footNote" }, t("delete.note")),
               h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
-                h("button", { type: "button", className: "dsm-btnText", onClick: () => setConfirmRemove(null) }, "取消"),
+                h("button", { type: "button", className: "dsm-btnText", onClick: () => setConfirmRemove(null) }, t("action.cancel")),
                 h("button", { type: "button", className: "dsm-primary", onClick: () => removeSkill(confirmRemove) },
-                  h(IconTrash, null), h("span", null, "删除")),
+                  h(IconTrash, null), h("span", null, t("action.delete"))),
               ),
             ),
           )
@@ -1113,13 +1397,38 @@ window.__ModuleLoader__.load({
         console.warn("[dsh-skills-manager] 宿主未提供 slots，设置分区未注册。");
         return;
       }
+      // 跟随宿主的语言设置：优先读 locale 服务，缺失时退回文档语言。
+      const localeService = typeof ctx.get === "function" ? ctx.get("locale") : undefined;
+      if (localeService) {
+        const read = () => {
+          try {
+            if (typeof localeService.getSnapshot === "function") return localeService.getSnapshot().active;
+            if (typeof localeService.getLocale === "function") return localeService.getLocale().active;
+          } catch {
+            /* 读不到就保持当前语言 */
+          }
+          return "";
+        };
+        setLocale(read());
+        if (typeof localeService.subscribe === "function") {
+          try {
+            localeService.subscribe(() => setLocale(read()));
+          } catch {
+            /* 订阅失败：仍可用初始语言 */
+          }
+        }
+      } else {
+        // 回退链：文档语言属性 → 浏览器语言。
+        if (typeof document !== "undefined" && document.documentElement) setLocale(document.documentElement.lang);
+        if (localeState.active === "zh" && typeof navigator !== "undefined") setLocale(navigator.language);
+      }
       ctx.slots.inject("settings.section", () =>
         ctx.slots.register(
           {
             name: "settings.section",
             id: "dsh-skills-manager",
             order: 11,
-            label: () => "技能",
+            label: () => t("section.title"),
           },
           Panel,
         ),
@@ -1135,6 +1444,11 @@ window.__ModuleLoader__.load({
       parseInline,
       parseMarkdown,
       scopeTextOf,
+      strings: STRINGS,
+      normalizeLocaleId,
+      localizeError,
+      setLocale,
+      currentLocale: () => localeState.active,
     });
     return module.exports;
   },

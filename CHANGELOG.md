@@ -2,6 +2,26 @@
 
 本文件记录 dsh-skills-manager 的版本变更。
 
+## 1.1.0
+
+界面国际化：跟随 DSH 的语言设置自动切换中英文。
+
+### 新增
+
+- 客户端内置 zh/en 词典（100+ 条文案），覆盖分区标题、工具条、列表、分组标题、详情/导入/新建/删除弹窗、状态与错误提示。
+- 宿主错误响应新增稳定 `code` 与 `params`，客户端按 code 取对应语言文案（无 code 时退回原文）。
+- `README.en.md` 英文版文档；`README.md` 顶部加语言切换入口。
+- `dsh.client.inject` 增加 `@deepseek-ai/dsh-client-locale`，保证 locale 服务在插件加载前就绪。
+
+### 调整
+
+- 语言侦测回退链：宿主 locale 服务 → `document.documentElement.lang` → `navigator.language`。
+- 语言切换时面板自动重渲染（订阅 locale 变化）。
+
+### 验证
+
+英文界面与详情弹窗实机截图（`docs/images/07-英文界面.png`、`08-英文详情弹窗.png`）；新增 4 项 i18n 单测，单测共 58 项全绿。
+
 ## 1.0.3
 
 作用域扫描优化。
