@@ -157,6 +157,26 @@ test('超大请求体返回 413', async () => {
   }
 })
 
+test('新建/导入后技能立刻出现在面板里（写操作要清掉扫描缓存）', async () => {
+  const host = makeHost()
+  try {
+    // 先读一次，把扫描缓存热起来
+    await call(host, '/dsh-skills-manager/state')
+    const created = await call(host, '/dsh-skills-manager/create', {
+      method: 'POST',
+      body: JSON.stringify({ name: 'fresh-skill', description: '刚建的技能' }),
+    })
+    assert.equal(created.statusCode, 200)
+    // 不等 TTL：紧接着读状态就要能看到
+    const state = (await call(host, '/dsh-skills-manager/state')).json()
+    const found = state.skills.find((skill) => skill.name === 'fresh-skill')
+    assert.ok(found, '新建的技能应立刻出现在面板里')
+    assert.equal(found.description, '刚建的技能')
+  } finally {
+    rmSync(host.home, { recursive: true, force: true })
+  }
+})
+
 test('写操作全链路：新建 → 禁用 → 启用 → 删除', async () => {
   const host = makeHost()
   try {
