@@ -104,6 +104,14 @@ window.__ModuleLoader__.load({
       ".dsm-desc{font-size:12px;color:var(--dsw-alias-label-secondary);line-height:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".dsm-badges{display:flex;gap:6px;align-items:center;flex:none}",
       ".dsm-badge{display:inline-flex;align-items:center;height:20px;padding:0 8px;border-radius:999px;border:1px solid var(--dsw-alias-border-l1);color:var(--dsw-alias-label-secondary);font-size:11.5px;white-space:nowrap}",
+      ".dsm-badgeWarn{color:var(--dsw-alias-state-warning,var(--dsw-alias-label-secondary));border-color:color-mix(in srgb, var(--dsw-alias-state-warning,#d29922) 45%, transparent)}",
+      ".dsm-badgeOff{color:var(--dsw-alias-label-tertiary,var(--dsw-alias-label-secondary))}",
+      ".dsm-rowMainTitle{display:flex;align-items:center;gap:8px;min-width:0}",
+      ".dsm-skillList{display:flex;flex-direction:column;gap:6px;padding:2px 0 8px 26px}",
+      ".dsm-skillItem{display:flex;align-items:flex-start;gap:10px;padding:8px 10px;border-radius:9px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 4%, transparent)}",
+      ".dsm-skillItemMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
+      ".dsm-skillItemName{font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".dsm-skillItemDesc{font-size:12px;color:var(--dsw-alias-label-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       // —— 开关 ——
       ".dsm-switch{position:relative;width:32px;height:18px;flex:none;display:inline-flex;align-items:center;padding:1px;border:0;border-radius:9999px;background:color-mix(in srgb, var(--dsw-alias-label-primary) 30%, transparent);cursor:pointer}",
       ".dsm-switch[data-on=\"true\"]{background:var(--dsw-alias-label-primary)}",
@@ -170,6 +178,8 @@ window.__ModuleLoader__.load({
       ".dsm-selectAll{display:flex;align-items:center;gap:10px;padding:8px 10px}",
       ".dsm-selCount{margin-left:auto;color:var(--dsw-alias-label-secondary);font-size:12.5px}",
       ".dsm-sourceRow{display:flex;align-items:center;gap:12px;padding:10px;border-radius:9px;cursor:pointer}",
+      ".dsm-sourceBlock{display:flex;flex-direction:column}",
+      ".dsm-chevronOpen{transform:rotate(90deg)}",
       ".dsm-sourceRow:hover{background:var(--dsw-alias-bg-layer-2)}",
       ".dsm-sourceMain{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}",
       ".dsm-sourceName{font-size:13.5px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
@@ -483,6 +493,23 @@ window.__ModuleLoader__.load({
         "detail.disabled": "已禁用",
         "detail.path": "文件路径",
         "detail.titleSuffix": "详情",
+        "list.readonly": "只读",
+        "list.disabledBadge": "已停用",
+        "list.blockedBadge": "DSH 不加载",
+        "list.blockedTitle": "DSH 不会加载这个技能：{reason}（修好后开关才有效）",
+        "issue.missing-name": "frontmatter 缺少 name",
+        "issue.missing-description": "frontmatter 缺少 description",
+        "issue.legacy-invocation-key": "含 DSH 已废弃的调用键（disableModelInvocation / modelInvocable / userInvocable）",
+        "issue.invalid-invocation-value": "调用键的取值不是布尔（true / false）",
+        "import.expandSource": "展开来源",
+        "import.collapseSource": "收起来源",
+        "import.sourceMissing": "目录不存在",
+        "import.emptySource": "该来源没有可导入的技能",
+        "import.noDescription": "（没有描述；复制导入时会自动补齐）",
+        "import.notLoadable": "不符合 DSH 加载要求",
+        "import.willNormalize": "导入时自动修正",
+        "create.content": "正文（可选）",
+        "create.contentPlaceholder": "这个技能具体怎么做（写进 SKILL.md 正文）",
         "detail.truncated": "文件较大，正文已截断显示。",
         "detail.noDescription": "（该技能没有描述）",
         "detail.noContent": "（该技能没有正文）",
@@ -583,6 +610,23 @@ window.__ModuleLoader__.load({
         "detail.disabled": "Disabled",
         "detail.path": "File path",
         "detail.titleSuffix": "Details",
+        "list.readonly": "Read-only",
+        "list.disabledBadge": "Disabled",
+        "list.blockedBadge": "Not loaded by DSH",
+        "list.blockedTitle": "DSH will not load this skill: {reason} (the switch only works once it is fixed)",
+        "issue.missing-name": "frontmatter has no name",
+        "issue.missing-description": "frontmatter has no description",
+        "issue.legacy-invocation-key": "carries an invocation key DSH no longer accepts (disableModelInvocation / modelInvocable / userInvocable)",
+        "issue.invalid-invocation-value": "an invocation key is not a boolean (true / false)",
+        "import.expandSource": "Expand source",
+        "import.collapseSource": "Collapse source",
+        "import.sourceMissing": "Folder not found",
+        "import.emptySource": "No importable skills in this source",
+        "import.noDescription": "(no description; it is filled in when copying)",
+        "import.notLoadable": "Not loadable by DSH",
+        "import.willNormalize": "Fixed on import",
+        "create.content": "Content (optional)",
+        "create.contentPlaceholder": "How this skill works (written into the SKILL.md body)",
         "detail.truncated": "The file is large; the content is truncated.",
         "detail.noDescription": "(This skill has no description)",
         "detail.noContent": "(This skill has no content)",
@@ -904,6 +948,8 @@ window.__ModuleLoader__.load({
       const [data, setData] = useState(null);
       const [error, setError] = useState(null);
       const [selected, setSelected] = useState(() => new Set());
+      // 展开的外部来源：默认全展开，让用户一眼看到每个技能的名称与描述。
+      const [expanded, setExpanded] = useState(() => new Set());
       const [mode, setMode] = useState("link");
       // 只有作用域本身就是工作区时才允许「导入到项目」——否则宿主会落到全局根，
       // 按钮却写着「导入到项目」，用户以为装到了项目里。
@@ -916,7 +962,13 @@ window.__ModuleLoader__.load({
         let alive = true;
         setError(null);
         apiGet("/external")
-          .then((payload) => { if (!alive) return; setData(payload); setSelected(new Set()); })
+          .then((payload) => {
+            if (!alive) return;
+            setData(payload);
+            setSelected(new Set());
+            // 默认展开所有来源：直接看到每个技能的名称与描述。
+            setExpanded(new Set(((payload && payload.sources) || []).map((source) => source.id)));
+          })
           .catch((err) => { if (!alive) return; setError(localizeError(err)); });
         return () => { alive = false; };
       }, []);
@@ -943,6 +995,26 @@ window.__ModuleLoader__.load({
           if (all) return new Set();
           const next = new Set();
           for (const skill of importable) next.add(keyOf(skill));
+          return next;
+        });
+      };
+
+      const toggleExpanded = (sourceId) => {
+        setExpanded((previous) => {
+          const next = new Set(previous);
+          if (next.has(sourceId)) next.delete(sourceId);
+          else next.add(sourceId);
+          return next;
+        });
+      };
+
+      /** 勾选/取消单个外部技能。 */
+      const toggleOne = (source, skill) => {
+        const key = source.id + "::" + skill.name;
+        setSelected((previous) => {
+          const next = new Set(previous);
+          if (next.has(key)) next.delete(key);
+          else next.add(key);
           return next;
         });
       };
@@ -1018,28 +1090,59 @@ window.__ModuleLoader__.load({
             sources.map((source) => {
               const sourceItems = (source.skills || []).filter((skill) => !skill.installed);
               const sourceChecked = sourceItems.length > 0 && sourceItems.every((skill) => selected.has(source.id + "::" + skill.name));
-              return h("div", {
-                key: source.id,
-                className: "dsm-sourceRow",
-                role: "button",
-                tabIndex: 0,
-                onClick: () => toggleSource(source),
-                onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleSource(source); } },
-              },
-                h("input", {
-                  type: "checkbox",
-                  className: "dsm-check",
-                  checked: sourceChecked,
-                  "aria-label": t("import.selectSource", { label: source.label }),
-                  onClick: (event) => event.stopPropagation(),
-                  onChange: () => toggleSource(source),
-                }),
-                h("div", { className: "dsm-sourceMain" },
-                  h("div", { className: "dsm-sourceName", title: source.label }, source.label),
-                  h("div", { className: "dsm-sourcePath", title: source.path }, source.path),
+              const open = expanded.has(source.id);
+              return h("div", { key: source.id, className: "dsm-sourceBlock" },
+                h("div", {
+                  className: "dsm-sourceRow",
+                  role: "button",
+                  tabIndex: 0,
+                  "aria-expanded": open ? "true" : "false",
+                  "aria-label": (open ? t("import.collapseSource") : t("import.expandSource")) + " " + source.label,
+                  onClick: () => toggleExpanded(source.id),
+                  onKeyDown: (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); toggleExpanded(source.id); } },
+                },
+                  h("input", {
+                    type: "checkbox",
+                    className: "dsm-check",
+                    checked: sourceChecked,
+                    "aria-label": t("import.selectSource", { label: source.label }),
+                    onClick: (event) => event.stopPropagation(),
+                    onChange: () => toggleSource(source),
+                  }),
+                  h("div", { className: "dsm-sourceMain" },
+                    h("div", { className: "dsm-sourceName", title: source.label }, source.label),
+                    h("div", { className: "dsm-sourcePath", title: source.path }, source.exists ? source.path : t("import.sourceMissing")),
+                  ),
+                  h("div", { className: "dsm-sourceCount" }, t("import.skillCount", { n: source.count })),
+                  h(IconChevronRight, { className: open ? "dsm-chevronOpen" : "" }),
                 ),
-                h("div", { className: "dsm-sourceCount" }, t("import.skillCount", { n: source.count })),
-                h(IconChevronRight, null),
+                open ? h("div", { className: "dsm-skillList" },
+                  sourceItems.length === 0
+                    ? h("div", { className: "dsm-muted" }, t("import.emptySource"))
+                    : sourceItems.map((skill) => {
+                      const key = source.id + "::" + skill.name;
+                      const issues = Array.isArray(skill.issues) ? skill.issues : [];
+                      return h("div", { key, className: "dsm-skillItem" },
+                        h("input", {
+                          type: "checkbox",
+                          className: "dsm-check",
+                          checked: selected.has(key),
+                          "aria-label": t("import.selectSource", { label: skill.name }),
+                          onChange: () => toggleOne(source, skill),
+                        }),
+                        h("div", { className: "dsm-skillItemMain" },
+                          h("div", { className: "dsm-skillItemName", title: skill.name }, skill.name),
+                          h("div", { className: "dsm-skillItemDesc", title: skill.description }, skill.description || t("import.noDescription")),
+                        ),
+                        issues.length > 0
+                          ? h("span", {
+                            className: "dsm-badge dsm-badgeWarn",
+                            title: issues.map((issue) => t("issue." + issue, {})).join("；"),
+                          }, t("import.willNormalize"))
+                          : null,
+                      );
+                    }),
+                ) : null,
               );
             }),
           ),
@@ -1078,6 +1181,7 @@ window.__ModuleLoader__.load({
       const t = props.t || currentT || fallbackT();
       const [name, setName] = useState("");
       const [description, setDescription] = useState("");
+      const [content, setContent] = useState("");
       const [error, setError] = useState(null);
       const [busy, setBusy] = useState(false);
       // 同步锁：busy 是异步生效的，连点两次会发两次请求（第二次 409）。
@@ -1089,7 +1193,13 @@ window.__ModuleLoader__.load({
         setBusy(true);
         setError(null);
         try {
-          await apiPost("/create", { name: name.trim(), description: description.trim(), cwd: props.cwd, target: props.scopeKind === "project" ? "project" : "global" });
+          await apiPost("/create", {
+            name: name.trim(),
+            description: description.trim(),
+            content: content.trim(),
+            cwd: props.cwd,
+            target: props.scopeKind === "project" ? "project" : "global",
+          });
           props.onCreated();
           props.onClose();
         } catch (err) {
@@ -1118,13 +1228,22 @@ window.__ModuleLoader__.load({
             }),
           ),
           h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, "描述（" + description.length + "/500）"),
+            h("div", { className: "dsm-label" }, t("create.description") + "（" + description.length + "/500）"),
             h("textarea", {
               className: "dsm-textarea",
               value: description,
               placeholder: t("create.descriptionPlaceholder"),
               maxLength: 500,
               onChange: (event) => setDescription(event.target.value),
+            }),
+          ),
+          h("div", { className: "dsm-field" },
+            h("div", { className: "dsm-label" }, t("create.content")),
+            h("textarea", {
+              className: "dsm-textarea",
+              value: content,
+              placeholder: t("create.contentPlaceholder"),
+              onChange: (event) => setContent(event.target.value),
             }),
           ),
           error ? h("div", { className: "dsm-error" }, error) : null,
@@ -1274,6 +1393,10 @@ window.__ModuleLoader__.load({
       const renderRow = (skill) => {
         const writable = writableSources.has(skill.source) && skill.exists;
         const enabled = !skill.invocation || skill.invocation.modelInvocable !== false;
+        // DSH 兼容性：缺 description / 含旧式调用键的技能，DSH 会整个文件忽略。
+        const issues = Array.isArray(skill.issues) ? skill.issues : [];
+        const blocked = issues.length > 0;
+        const issueText = issues.map((issue) => t("issue." + issue, {})).join("；");
         return h("div", {
           key: skill.name,
           className: "dsm-row",
@@ -1289,12 +1412,21 @@ window.__ModuleLoader__.load({
         },
           h("div", { className: "dsm-icon" }, writable ? h(IconSparkle, null) : h(IconLayers, null)),
           h("div", { className: "dsm-rowMain" },
-            h("div", { className: "dsm-name", title: skill.name }, skill.name),
-            h("div", { className: "dsm-desc", title: skill.description }, skill.description || "（无描述）"),
+            h("div", { className: "dsm-rowMainTitle" },
+              h("div", { className: "dsm-name", title: skill.name }, skill.name),
+              blocked ? h("span", { className: "dsm-badge dsm-badgeWarn", title: t("list.blockedTitle", { reason: issueText }) }, t("list.blockedBadge")) : null,
+              writable && !enabled ? h("span", { className: "dsm-badge dsm-badgeOff" }, t("list.disabledBadge")) : null,
+            ),
+            h("div", { className: "dsm-desc", title: skill.description }, skill.description || t("detail.noDescription")),
           ),
           writable
-            ? h(Switch, { on: enabled, label: t("switch.enable", { name: skill.name }), onChange: (next) => toggleSkill(skill, next) })
-            : h("span", { className: "dsm-badge" }, "只读"),
+            ? h(Switch, {
+              on: enabled,
+              disabled: blocked,
+              label: blocked ? t("list.blockedTitle", { reason: issueText }) : t("switch.enable", { name: skill.name }),
+              onChange: (next) => toggleSkill(skill, next),
+            })
+            : h("span", { className: "dsm-badge" }, t("list.readonly")),
           writable
             ? IconButton({ className: "dsm-trash", label: "删除 " + skill.name, onClick: () => setConfirmRemove(skill) }, h(IconTrash, null))
             : skill.path

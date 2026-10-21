@@ -28,9 +28,10 @@ Package name, loader row id and client module id all use the `@bluechonk` scope;
 | Scope dropdown | "User · Local" shows **only** the global `~/.dsh/skills`, the user-level `~/.agents/skills` and the preset built-ins; a "Workspaces" group lists every workspace, and picking one shows **only that workspace's** `<workspace>/.dsh/skills` and `<workspace>/.agents/skills` (global and user-level skills are not mixed in). Switching workspaces only rescans that workspace |
 | Skill count | "Skills N" at the top is the number of skills visible in the current scope |
 | Search | Filters live by name, description and path |
-| Installed list | Name + description + enable switch + delete button; the switch writes `disable-model-invocation` (native DSH semantics), deletion is limited to managed roots |
+| Installed list | Name + description + enable switch + delete button; the switch writes `disable-model-invocation` (native DSH semantics) and also drops the legacy invocation keys DSH no longer accepts; deletion is limited to managed roots |
+| Compatibility hint | DSH requires both `name` and `description` in the frontmatter and rejects legacy invocation keys — skills that break those rules are flagged "Not loaded by DSH" and their switch is disabled (the host ignores such files entirely) |
 | Built-in group | Skills registered at runtime or shipped inside a package are shown read-only, grouped by source |
-| More menu | "Import" external agent skills |
+| More menu | "Import" external agent skills: expand a source to see every skill with its name and description, pick individually or per source; a copy import fills in a missing description and removes legacy invocation keys |
 | Detail dialog | Title + a "Skill" badge; description (the frontmatter `description`, rendered as Markdown); **file content** (the SKILL.md body, rendered as Markdown in a scrollable card, matching the Codex skill page); scope (Personal / project name / Built-in), status (Enabled / Disabled), and the file path (inline monospace path + copy icon) |
 
 ![Skill detail dialog](docs/images/02-技能详情弹窗.png)

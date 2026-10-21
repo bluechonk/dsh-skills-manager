@@ -2,6 +2,46 @@
 
 本文件记录 dsh-skills-manager 的版本变更。
 
+## 1.2.0
+
+三个功能补成「真能用」：描述、启停开关、导入外部 Agent 技能。
+
+### 背景：DSH 的加载规则
+
+宿主 `@deepseek-ai/dsh-skill-filesystem` 对 SKILL.md 有硬规则：
+
+1. frontmatter 必须同时有 `name` 与 `description`，**缺一个就整个文件被忽略**；
+2. 出现旧式调用键（`disableModelInvocation` / `modelInvocable` / `userInvocable`）直接判非法，**整个文件被忽略**；
+3. `disable-model-invocation` / `user-invocable` 的取值必须是布尔。
+
+也就是说：一个没有 description、或带着旧式调用键的技能，**在 DSH 里压根没被加载**——面板里看着在，模型却用不了，
+「停用开关」对它也毫无意义。
+
+### 新增
+
+- **诊断**：`diagnoseFrontmatter` 按上面三条规则给每个技能出诊断项（`missing-name` / `missing-description` /
+  `legacy-invocation-key` / `invalid-invocation-value`），扫描时随技能一起返回。
+- **归一化**：`normalizeSkillFrontmatter` 补 `name` / `description`（没有就从正文派生一句）、删旧式调用键、
+  保留其余键；`removeLegacyInvocationKeys` 只做旧键清理。
+- **新建技能加「正文（可选）」**：「添加技能」现在是 名称 + 描述 + 内容三件套，正文写进 SKILL.md 正文。
+- **导入弹窗重做**：来源可展开，逐个技能展示**名称 + 描述**并单独勾选；不合规的技能标「导入时自动修正」；
+  来源为空 / 目录不存在都有明确说明。
+
+### 调整
+
+- **导入**：`copy` 模式落地后自动归一化 frontmatter（补 description、删旧键），导入结果回报 `normalized`；
+  `link` 模式不改源文件，遇到不合规的源直接拒收并说明原因。
+- **启停开关**：改写 `disable-model-invocation` 的同时清掉旧式调用键——否则 DSH 仍会忽略整个文件，开关等于没用。
+- **列表行**：不合规的技能标「DSH 不加载」并把开关置灰（title 说明原因）；已停用的技能标「已停用」。
+
+### 验证
+
+- 导入归一化：缺 description 的外部技能复制导入后 `normalized: ["added-description"]`，落地文件有了描述；
+  带旧键的外部技能 `normalized: ["removed-legacy-key"]`；两者导入后都能在面板里正常列出（issues 为空）。
+- 软链导入不合规源：HTTP 400 并说明「软链不会修正源文件，请改用直接复制」。
+- 开关清旧键：`toggle` 返回 `removedLegacyKeys: ["disableModelInvocation"]`，文件里只剩 `disable-model-invocation: true`。
+- 单测新增 5 项（诊断 / 派生描述 / 归一化 / 无 frontmatter 补段 / 旧键清理），共 **66 项全绿**。
+
 ## 1.1.1
 
 作用域语义修正 + 支持从 GitHub 链接安装。

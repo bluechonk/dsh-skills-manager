@@ -2,6 +2,75 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 
 import { invocationOf, isDisabledFlag, isLosslessUtf8, isValidSkillName, parseFrontmatter, setDisableModelInvocation } from '../lib/frontmatter.js'
+import {
+  deriveDescription,
+  diagnoseFrontmatter,
+  normalizeSkillFrontmatter,
+  removeLegacyInvocationKeys,
+} from '../lib/frontmatter.js'
+
+test('diagnoseFrontmatter 按 DSH 的规则判断能否被加载', () => {
+  // 正常技能：没有诊断项
+  const ok = diagnoseFrontmatter(parseFrontmatter(['---', 'name: demo', 'description: 描述', '---', ''].join('\n')))
+  assert.deepEqual(ok.issues, [])
+  assert.equal(ok.loadable, true)
+
+  // 缺 description：DSH 会忽略整个文件
+  const noDesc = diagnoseFrontmatter(parseFrontmatter(['---', 'name: demo', '---', ''].join('\n')))
+  assert.equal(noDesc.issues.includes('missing-description'), true)
+  assert.equal(noDesc.loadable, false)
+
+  // 缺 name
+  const noName = diagnoseFrontmatter(parseFrontmatter(['---', 'description: 描述', '---', ''].join('\n')))
+  assert.equal(noName.issues.includes('missing-name'), true)
+
+  // 旧式调用键：DSH 直接判非法
+  const legacy = diagnoseFrontmatter(parseFrontmatter(['---', 'name: demo', 'description: 描述', 'disableModelInvocation: true', '---', ''].join('\n')))
+  assert.deepEqual(legacy.legacyKeys, ['disableModelInvocation'])
+  assert.equal(legacy.issues.includes('legacy-invocation-key'), true)
+
+  // 调用键取值不是布尔
+  const badBool = diagnoseFrontmatter(parseFrontmatter(['---', 'name: demo', 'description: 描述', 'disable-model-invocation: yes-please', '---', ''].join('\n')))
+  assert.deepEqual(badBool.invalidBooleans, ['disable-model-invocation'])
+})
+
+test('deriveDescription 从正文派生一句描述', () => {
+  assert.equal(deriveDescription('# 标题\n\n正文第一段\n第二段', '兜底'), '标题')
+  assert.equal(deriveDescription('正文第一段\n第二段', '兜底'), '正文第一段 第二段')
+  assert.equal(deriveDescription('', '兜底'), '兜底')
+})
+
+test('normalizeSkillFrontmatter 补 name/description 并删旧式调用键', () => {
+  const text = ['---', 'name: demo', 'disableModelInvocation: true', 'allowed-tools: Bash(x:*)', '---', '', '# 正文', '内容'].join('\n')
+  const fixed = normalizeSkillFrontmatter(text, { name: 'demo' })
+  assert.equal(fixed.changes.includes('added-description'), true)
+  assert.equal(fixed.changes.includes('removed-legacy-key'), true)
+  assert.match(fixed.text, /name: demo/)
+  assert.match(fixed.text, /description: /)
+  assert.doesNotMatch(fixed.text, /disableModelInvocation/)
+  assert.match(fixed.text, /allowed-tools: Bash\(x:\*\)/)
+  // 正文逐字保留
+  assert.match(fixed.text, /# 正文\n内容/)
+})
+
+test('normalizeSkillFrontmatter 没有 frontmatter 时补一整段', () => {
+  const fixed = normalizeSkillFrontmatter('# 只有正文\n内容', { name: 'demo', description: '描述' })
+  assert.equal(fixed.changes.includes('added-frontmatter'), true)
+  assert.match(fixed.text, /^---\nname: demo\ndescription: [^\n]+\n---/)
+  assert.match(fixed.text, /# 只有正文/)
+})
+
+test('removeLegacyInvocationKeys 只删旧式键且保留其余内容', () => {
+  const text = ['---', 'name: demo', 'description: 描述', 'modelInvocable: false', 'userInvocable: true', '---', '', '正文'].join('\n')
+  const cleaned = removeLegacyInvocationKeys(text)
+  assert.deepEqual(cleaned.removed.sort(), ['modelInvocable', 'userInvocable'])
+  assert.doesNotMatch(cleaned.text, /modelInvocable|userInvocable/)
+  assert.match(cleaned.text, /name: demo/)
+  assert.match(cleaned.text, /正文/)
+  // 没有旧式键时原样返回
+  const clean = ['---', 'name: demo', 'description: 描述', '---', ''].join('\n')
+  assert.equal(removeLegacyInvocationKeys(clean).text, clean)
+})
 
 test('parseFrontmatter 解析顶层标量与引号', () => {
   const text = ['---', 'name: demo-skill', 'description: "带引号的描述"', '---', '', '正文'].join('\n')
