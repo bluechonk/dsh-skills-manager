@@ -196,15 +196,15 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
-| 1.2.1 | `v1.2.1` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
-| 1.2.0 | `v1.2.0` | 描述 / 启停开关 / 导入外部 Agent 技能三处补成真能用（按 DSH 的加载规则诊断与归一化） |
-| 1.1.1 | `v1.1.1` | 界面国际化（跟随宿主语言）、工作区作用域互斥、支持从 GitHub 链接安装、插件市场索引 |
-| 1.0.0 | `v1.0.0` | 首个可用版本：技能列表、作用域切换、Markdown 详情、启停与删除 |
+| 0.1.3 | `v0.1.3` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
+| 0.1.2 | `v0.1.2` | 描述 / 启停开关 / 导入外部 Agent 技能三处补成真能用（按 DSH 的加载规则诊断与归一化） |
+| 0.1.1 | `v0.1.1` | 界面国际化（跟随宿主语言）、工作区作用域互斥、支持从 GitHub 链接安装、插件市场索引 |
+| 0.1.0 | `v0.1.0` | 首个可用版本：技能列表、作用域切换、Markdown 详情、启停与删除 |
 
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v1.2.1"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.3"
 ```
 
 ## 仓库
