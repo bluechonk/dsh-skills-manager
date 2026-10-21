@@ -1,0 +1,24 @@
+#!/bin/sh
+# 推送前门禁：在 WSL（Ubuntu）里跑与 CI 等价的检查——语法检查 + 单测。
+#
+# 为什么在 WSL 里跑：CI 跑的是 Linux，用同一套环境在本地先过一遍，
+# 免得把「Windows 能过、Linux 过不了」的提交推上去。
+# 测试不过就中止推送；不要用 --no-verify 绕过。
+set -e
+
+repo="$(git rev-parse --show-toplevel)"
+cd "$repo"
+
+if command -v wsl.exe >/dev/null 2>&1; then
+  echo "[pre-push] 在 WSL 中执行 npm run check && npm test"
+  wsl.exe --cd "$repo" sh -lc 'npm run check && npm test'
+  status=$?
+  if [ $status -ne 0 ]; then
+    echo "[pre-push] 测试未通过，已中止推送"
+  fi
+  exit $status
+fi
+
+echo "[pre-push] 未找到 wsl.exe，回退到本机执行"
+npm run check
+npm test
