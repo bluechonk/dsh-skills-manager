@@ -37,8 +37,13 @@ Package name, loader row id and client module id all use the `@bluechonk` scope;
 | Built-in group | Skills registered at runtime or shipped inside a package are shown read-only, grouped by source |
 | More menu | "Import" external agent skills: expand a source to see every skill with its name and description, pick individually or per source; a copy import fills in a missing description and removes legacy invocation keys |
 | Detail dialog | Title + a "Skill" badge; description (the frontmatter `description`, rendered as Markdown); **file content** (the SKILL.md body, rendered as Markdown in a scrollable card, matching the Codex skill page); scope (Personal / project name / Built-in), status (Enabled / Disabled), and the file path (inline monospace path + copy icon) |
+| Translation | On by default in the detail dialog: the **description and body** are translated into Chinese (the skill name is an identifier and is never translated), keeping Markdown structure and code blocks. Use "View original" to compare, or the "Translate" button in the title bar to turn it off. It reuses the host's `translator` service (the same Bing/Google channel as the reasoning translation); when `dsh-experimental-cot-translation-bundle` is not enabled it reports unavailability and falls back to the original text |
 
 ![Skill detail dialog](docs/images/02-技能详情弹窗.png)
+
+The same dialog translated (description and body in Chinese, switchable back to the original):
+
+![Translated skill detail](docs/images/11-技能详情翻译.png)
 
 More menu and import dialog:
 

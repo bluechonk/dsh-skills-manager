@@ -35,7 +35,7 @@ assert.ok(captured !== null && captured.__pure !== undefined, '桩物化失败�
 const P = captured.__pure
 
 test('__pure 导出面固定（防导出漂移）', () => {
-  assert.deepEqual(Object.keys(P).sort(), ['fallbackT', 'interpolate', 'localeDict', 'localeNs', 'localizeError', 'parseInline', 'parseMarkdown', 'scopeTextOf', 'tr'])
+  assert.deepEqual(Object.keys(P).sort(), ['fallbackT', 'interpolate', 'localeDict', 'localeNs', 'localizeError', 'parseInline', 'parseMarkdown', 'scopeTextOf', 'tr', 'translationChunks'])
   assert.ok(Object.isFrozen(P))
 })
 
@@ -163,6 +163,29 @@ test('parseMarkdown 的块标量里的 --- 不截断 frontmatter 正文', () => 
   assert.equal(blocks[0].type, 'p')
   assert.equal(blocks[1].type, 'hr')
   assert.equal(blocks[2].type, 'p')
+})
+
+test('translationChunks 按空行切块且不超过上限', () => {
+  const long = Array.from({ length: 20 }, (_, i) => `段落 ${i}：${'x'.repeat(120)}`).join('\n\n')
+  const chunks = P.translationChunks(long, 300)
+  assert.ok(chunks.length > 1, '长文本应被切成多块')
+  for (const chunk of chunks) {
+    assert.ok(chunk.length <= 300, `块长 ${chunk.length} 超过上限`)
+    assert.ok(chunk.trim() !== '', '不应产生空白块')
+  }
+  // 不丢内容：去掉换行后应与原文一致
+  assert.equal(chunks.join('').replace(/\s+/g, ''), long.replace(/\s+/g, ''))
+})
+
+test('translationChunks 对短文本与空文本安全', () => {
+  assert.deepEqual(P.translationChunks('只有一段', 100), ['只有一段'])
+  assert.deepEqual(P.translationChunks('', 100), [])
+  assert.deepEqual(P.translationChunks('\n\n  \n', 100), [])
+})
+
+test('translationChunks 单段超长时硬切', () => {
+  const chunks = P.translationChunks('y'.repeat(500), 100)
+  assert.deepEqual(chunks, ['y'.repeat(100), 'y'.repeat(100), 'y'.repeat(100), 'y'.repeat(100), 'y'.repeat(100)])
 })
 
 test('scopeTextOf 按来源给出范围文案', () => {
