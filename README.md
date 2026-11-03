@@ -205,6 +205,7 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
+| 0.1.6 | `v0.1.6` | 修复插件图标不显示（补 manifest 的 `icon` 声明） |
 | 0.1.5 | `v0.1.5` | 技能详情机器翻译（描述 + 正文，默认开启，复用宿主 translator 服务） |
 | 0.1.4 | `v0.1.4` | 从设置页分区改为侧边栏独立面板（`sidebar.panellist` + `main`），与「插件」「自动化任务」「使用统计」同级 |
 | 0.1.3 | `v0.1.3` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
@@ -215,7 +216,7 @@ npm run check     # 语法检查（lib 与 client）
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.5"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.6"
 ```
 
 ## 仓库
