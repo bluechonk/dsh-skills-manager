@@ -37,8 +37,13 @@ DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与�
 | 内置分组 | 运行时注册与随包内置的技能只读展示，按来源分组 |
 | 更多菜单 | 「导入」外部 Agent 技能：来源可展开，逐个技能展示名称与描述，可单选或整源勾选；复制导入会自动补齐缺失的 description 并移除旧式调用键 |
 | 详情弹窗 | 标题 +「Skill」徽章；描述（frontmatter 的 `description`，Markdown 渲染）；**文件内容**（SKILL.md 正文，Markdown 渲染的滚动卡片，形态对齐 Codex 技能页）；范围（个人 / 项目名 / 内置）、状态（已启用 / 已禁用）、文件路径（行内等宽路径 + 复制图标） |
+| 翻译 | 详情弹窗默认开启翻译：**描述与正文**自动译成中文（技能名是标识符，不翻译），Markdown 结构与代码块保留；可点「看原文」对照，也可用标题栏的「翻译」按钮整体关掉。复用宿主的 `translator` 服务（与「思考过程机器翻译」同一套 Bing/Google 通道），未启用 `dsh-experimental-cot-translation-bundle` 时提示不可用并退回原文 |
 
 ![技能详情弹窗](docs/images/02-技能详情弹窗.png)
+
+翻译后的详情弹窗（描述与正文均为中文，可切回原文）：
+
+![技能详情翻译](docs/images/11-技能详情翻译.png)
 
 更多菜单与导入弹窗：
 
@@ -200,6 +205,7 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
+| 0.1.5 | `v0.1.5` | 技能详情机器翻译（描述 + 正文，默认开启，复用宿主 translator 服务） |
 | 0.1.4 | `v0.1.4` | 从设置页分区改为侧边栏独立面板（`sidebar.panellist` + `main`），与「插件」「自动化任务」「使用统计」同级 |
 | 0.1.3 | `v0.1.3` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
 | 0.1.2 | `v0.1.2` | 描述 / 启停开关 / 导入外部 Agent 技能三处补成真能用（按 DSH 的加载规则诊断与归一化） |
@@ -209,7 +215,7 @@ npm run check     # 语法检查（lib 与 client）
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.4"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.5"
 ```
 
 ## 仓库

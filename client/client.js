@@ -170,6 +170,13 @@ window.__ModuleLoader__.load({
       ".dsm-error{color:var(--dsw-alias-state-error-primary);font-size:12.5px}",
       ".dsm-state{padding:28px;text-align:center;color:var(--dsw-alias-label-secondary);font-size:13.5px}",
       ".dsm-footNote{margin-top:10px;font-size:12px;color:var(--dsw-alias-label-secondary);line-height:1.6}",
+      // —— 翻译开关与状态条 ——
+      ".dsm-translateToggle{display:inline-flex;align-items:center;gap:4px;height:24px;padding:0 8px;margin-left:8px;border-radius:9999px;border:1px solid var(--dsw-alias-border-l1);background:transparent;color:var(--dsw-alias-label-secondary);font:inherit;font-size:12.5px;cursor:pointer}",
+      ".dsm-translateToggle:hover{background:var(--dsw-alias-bg-layer-1);color:var(--dsw-alias-label-primary)}",
+      ".dsm-translateToggle[data-on=\"true\"]{background:var(--dsw-alias-bg-layer-2);color:var(--dsw-alias-label-primary)}",
+      ".dsm-translateBar{display:flex;align-items:center;gap:8px;margin:-2px 0 10px;min-height:20px;font-size:12.5px;color:var(--dsw-alias-label-secondary)}",
+      ".dsm-translateBar button{padding:0;border:0;background:none;color:var(--dsw-alias-brand-primary);font:inherit;font-size:12.5px;cursor:pointer}",
+      ".dsm-translateBar button:hover{text-decoration:underline}",
     ].join("");
 
     /** 注入样式（按 data-plugin-css 去重，热重载原位替换）。 */
@@ -204,6 +211,12 @@ window.__ModuleLoader__.load({
     const IconClose = (p) => h(Svg, p, h("path", { d: "m6 6 12 12M18 6 6 18" }));
     const IconCheck = (p) => h(Svg, p, h("path", { d: "m5 13 4 4 10-10" }));
     const IconCopy = (p) => h(Svg, p, h("rect", { x: 9, y: 9, width: 11, height: 11, rx: 2 }), h("path", { d: "M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3" }));
+    // 「文 + A」：机器翻译的通用图形，16px 下比文字按钮更省地。
+    const IconTranslate = (p) => h(Svg, p,
+      h("path", { d: "M3.5 4.5h6M6.5 2.5v2c0 2.6-1.3 4.8-3.5 6.3" }),
+      h("path", { d: "M4.6 9.2c.9 1.8 2.7 3.2 4.9 3.9" }),
+      h("path", { d: "m12 19.5 3.2-8.6 3.2 8.6M13.2 16.8h4" }),
+    );
     const IconImport = (p) => h(Svg, p, h("path", { d: "M12 3v11" }), h("path", { d: "m8 10 4 4 4-4" }), h("path", { d: "M4 19h16" }));
     const IconInfo = (p) => h(Svg, p, h("circle", { cx: 12, cy: 12, r: 9 }), h("path", { d: "M12 11v5" }), h("path", { d: "M12 8h.01" }));
     const IconSparkle = (p) => h(Svg, p, h("path", { d: "M12 3c1 4 2 5 6 6-4 1-5 2-6 6-1-4-2-5-6-6 4-1 5-2 6-6Z" }), h("path", { d: "M18 15c.5 2 1 2.5 3 3-2 .5-2.5 1-3 3-.5-2-1-2.5-3-3 2-.5 2.5-1 3-3Z" }));
@@ -419,6 +432,62 @@ window.__ModuleLoader__.load({
     }
 
     /* ---------------------------------------------------------------- */
+    /* 翻译                                                             */
+    /* ---------------------------------------------------------------- */
+
+    /**
+     * 翻译目标语言：技能正文以英文为主，统一译成中文（与宿主的机翻配置一致）。
+     * 主机侧的 translator 服务由 dsh-experimental-cot-translation-bundle 提供。
+     */
+    const TRANSLATE_TARGET = "zh";
+    /** 单块上限：宿主 translator 默认 maxTextChars=4000，留出余量避免被拒。 */
+    const TRANSLATE_CHUNK_CHARS = 3500;
+    /** 翻译结果缓存：同一技能同一字段只译一次，反复开关弹窗不重复请求。 */
+    const translationCache = new Map();
+
+    /** 按空行把长文本切成不超过上限的块，逐块翻译后拼回。 */
+    function translationChunks(text, limit) {
+      const parts = [];
+      const paragraphs = String(text).split(/(\r?\n(?:[\t ]*\r?\n)+)/);
+      let buffer = "";
+      for (const part of paragraphs) {
+        if (buffer.length > 0 && buffer.length + part.length > limit) {
+          parts.push(buffer);
+          buffer = "";
+        }
+        if (part.length > limit) {
+          let rest = part;
+          while (rest.length > limit) {
+            parts.push(rest.slice(0, limit));
+            rest = rest.slice(limit);
+          }
+          buffer = rest;
+        } else {
+          buffer += part;
+        }
+      }
+      if (buffer.length > 0) parts.push(buffer);
+      return parts.filter((part) => part.trim() !== "");
+    }
+
+    /** 翻译一段文本（带缓存）；失败直接抛出，由调用方决定怎么提示。 */
+    async function translateText(text) {
+      const key = TRANSLATE_TARGET + "\n" + text;
+      const cached = translationCache.get(key);
+      if (cached !== undefined) return cached;
+      const chunks = translationChunks(text, TRANSLATE_CHUNK_CHARS);
+      if (chunks.length === 0) return text;
+      const out = [];
+      for (const chunk of chunks) {
+        const payload = await apiPost("/translate", { text: chunk, targetLanguage: TRANSLATE_TARGET });
+        out.push(typeof payload.text === "string" ? payload.text : "");
+      }
+      const joined = out.join("");
+      translationCache.set(key, joined);
+      return joined;
+    }
+
+    /* ---------------------------------------------------------------- */
     /* 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale                */
     /*                                                                      */
     /* 用法与 dsh-usage-stats 一致：                                            */
@@ -485,6 +554,13 @@ window.__ModuleLoader__.load({
         "detail.noDescription": "（该技能没有描述）",
         "detail.noContent": "（该技能没有正文）",
         "detail.builtinNoFile": "（内置技能，无本地文件）",
+        "detail.translate": "翻译",
+        "detail.translating": "翻译中…",
+        "detail.translatedBadge": "译文",
+        "detail.viewOriginal": "看原文",
+        "detail.viewTranslation": "看译文",
+        "detail.translationFailed": "翻译失败，已显示原文",
+        "detail.translationUnavailable": "翻译服务不可用（需启用 cot-translation 插件）",
         "import.title": "导入外部 Agent 技能",
         "import.targetGlobal": "全局",
         "import.targetProject": "项目",
@@ -547,6 +623,13 @@ window.__ModuleLoader__.load({
         "error.external-skill-not-found": "外部目录里找不到技能：{name}",
         "error.no-local-dir": "该技能没有可打开的本地目录",
         "error.dir-missing": "目录不存在：{path}",
+        "error.translator-unavailable": "翻译服务不可用（需启用 cot-translation 插件）",
+        "error.translation-failed": "翻译失败，请稍后重试",
+        "error.TRANSLATION_TIMEOUT": "翻译超时，请稍后重试",
+        "error.TRANSLATION_TEXT_LIMIT": "文本过长，无法翻译",
+        "error.TRANSLATION_HTTP_ERROR": "翻译服务请求失败",
+        "error.TRANSLATION_INVALID_RESPONSE": "翻译结果无效",
+        "error.TRANSLATION_REQUEST_FAILED": "翻译请求失败",
       },
       en: {
         "section.title": "Skills",
@@ -602,6 +685,13 @@ window.__ModuleLoader__.load({
         "detail.noDescription": "(This skill has no description)",
         "detail.noContent": "(This skill has no content)",
         "detail.builtinNoFile": "(Built-in skill, no local file)",
+        "detail.translate": "Translate",
+        "detail.translating": "Translating…",
+        "detail.translatedBadge": "Translated",
+        "detail.viewOriginal": "View original",
+        "detail.viewTranslation": "View translation",
+        "detail.translationFailed": "Translation failed; the original text is shown",
+        "detail.translationUnavailable": "Translation is unavailable (enable the cot-translation plugin)",
         "import.title": "Import External Agent Skills",
         "import.targetGlobal": "Global",
         "import.targetProject": "Project",
@@ -664,6 +754,13 @@ window.__ModuleLoader__.load({
         "error.external-skill-not-found": "Skill not found in the external folder: {name}",
         "error.no-local-dir": "This skill has no local folder to open",
         "error.dir-missing": "Folder not found: {path}",
+        "error.translator-unavailable": "Translation is unavailable (enable the cot-translation plugin)",
+        "error.translation-failed": "Translation failed, please try again later",
+        "error.TRANSLATION_TIMEOUT": "Translation timed out, please try again later",
+        "error.TRANSLATION_TEXT_LIMIT": "The text is too long to translate",
+        "error.TRANSLATION_HTTP_ERROR": "The translation service request failed",
+        "error.TRANSLATION_INVALID_RESPONSE": "The translation result is invalid",
+        "error.TRANSLATION_REQUEST_FAILED": "The translation request failed",
       },
     };
 
@@ -841,11 +938,20 @@ window.__ModuleLoader__.load({
       const [detail, setDetail] = useState(null);
       const [error, setError] = useState(null);
       const [copied, setCopied] = useState(null);
+      // 翻译默认开启：看英文介绍时直接给中文。name 是标识符，不参与翻译。
+      const [translateOn, setTranslateOn] = useState(true);
+      const [translating, setTranslating] = useState(false);
+      const [translated, setTranslated] = useState({ desc: "", content: "" });
+      const [translateError, setTranslateError] = useState(null);
+      const [showOriginal, setShowOriginal] = useState(false);
       useEffect(() => {
         let alive = true;
         setDetail(null);
         setError(null);
         setCopied(null);
+        setTranslated({ desc: "", content: "" });
+        setTranslateError(null);
+        setShowOriginal(false);
         apiPost("/body", { name: skill.name, cwd: props.cwd })
           .then((payload) => { if (alive) setDetail(payload); })
           .catch((err) => { if (alive) setError(localizeError(err)); });
@@ -872,23 +978,77 @@ window.__ModuleLoader__.load({
         : skill.description || "";
       const bodyText = detail && typeof detail.body === "string" ? detail.body.trim() : "";
 
+      // 翻译：描述与正文各译一次，结果缓存在 translationCache 里；失败只提示，不影响原文。
+      useEffect(() => {
+        if (!translateOn) {
+          setTranslating(false);
+          return undefined;
+        }
+        if (!descriptionText && !bodyText) return undefined;
+        let alive = true;
+        setTranslating(true);
+        setTranslateError(null);
+        Promise.all([
+          descriptionText ? translateText(descriptionText) : Promise.resolve(""),
+          bodyText ? translateText(bodyText) : Promise.resolve(""),
+        ])
+          .then(([desc, content]) => {
+            if (!alive) return;
+            setTranslated({ desc, content });
+            setTranslating(false);
+          })
+          .catch((err) => {
+            if (!alive) return;
+            setTranslateError(localizeError(err));
+            setTranslating(false);
+          });
+        return () => { alive = false; };
+      }, [skill.name, props.cwd, translateOn, detail]);
+
+      const hasTranslation = Boolean(translated.desc || translated.content);
+      // 翻译中 / 失败 / 关掉开关 / 正在看原文 —— 这几种情况都回落到原文。
+      const showTranslated = translateOn && !showOriginal && !translating && !translateError && hasTranslation;
+      const descShown = showTranslated && translated.desc ? translated.desc : descriptionText;
+      const bodyShown = showTranslated && translated.content ? translated.content : bodyText;
+
       return h(Modal, { onClose: props.onClose, label: skill.name + " " + t("detail.titleSuffix") },
         h("div", { className: "dsm-modalHead" },
           h("span", { className: "dsm-modalTitle" }, skill.name),
           h("span", { className: "dsm-badgeSkill", style: { marginLeft: "8px" } }, "Skill"),
+          h("button", {
+            type: "button",
+            className: "dsm-translateToggle",
+            "data-on": translateOn ? "true" : "false",
+            "aria-pressed": translateOn ? "true" : "false",
+            title: t("detail.translate"),
+            onClick: () => setTranslateOn((value) => !value),
+          }, h(IconTranslate, null), h("span", null, t("detail.translate"))),
           h("div", { style: { marginLeft: "auto" } },
             IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null))),
         ),
         h("div", { className: "dsm-modalBody" },
+          h("div", { className: "dsm-translateBar" },
+            translating
+              ? h("span", null, t("detail.translating"))
+              : translateError
+                ? h("span", { className: "dsm-error" }, translateError)
+                : hasTranslation
+                  ? h("span", null, t("detail.translatedBadge"))
+                  : null,
+            hasTranslation && !translating
+              ? h("button", { type: "button", onClick: () => setShowOriginal((value) => !value) },
+                  t(showOriginal ? "detail.viewTranslation" : "detail.viewOriginal"))
+              : null,
+          ),
           h("div", { className: "dsm-label" }, t("detail.description")),
           h("div", { className: "dsm-mdScroll" }, error
             ? h("div", { className: "dsm-error" }, error)
-            : descriptionText
-              ? renderMarkdown(descriptionText)
+            : descShown
+              ? renderMarkdown(descShown)
               : h("span", { className: "dsm-muted" }, t("detail.noDescription"))),
           h("div", { className: "dsm-label" }, t("detail.content")),
-          h("div", { className: "dsm-mdCard" }, bodyText
-            ? renderMarkdown(bodyText)
+          h("div", { className: "dsm-mdCard" }, bodyShown
+            ? renderMarkdown(bodyShown)
             : h("span", { className: "dsm-muted" }, detail ? t("detail.noContent") : t("state.loading"))),
           detail && detail.contentTruncated ? h("div", { className: "dsm-footNote" }, t("detail.truncated")) : null,
           h("div", { className: "dsm-twoCol" },
@@ -1619,6 +1779,7 @@ window.__ModuleLoader__.load({
       parseInline,
       parseMarkdown,
       scopeTextOf,
+      translationChunks,
       localeDict: LOCALE_DICT,
       localeNs: LOCALE_NS,
       interpolate,
