@@ -32,7 +32,7 @@
           "source": {
             "type": "git",
             "url": "https://github.com/bluechonk/dsh-skills-manager",
-            "commit": "05d039203ed254b33ee0fb7dd6f2ca0eef8c82de"
+            "commit": "36b95a2261787768dd7d2722bc0e46411158cf5b"
           }
         }
       ]
