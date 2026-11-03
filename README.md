@@ -2,11 +2,15 @@
 
 **中文** | [English](README.en.md)
 
-DeepSeek Harness 插件：在**设置页「模型」正下方**新增「技能」分区，集中展示并管理当前实际加载的全部 skill —— 全局 `~/.dsh/skills`、全局 `~/.agents/skills`、以及项目/工作区技能。
+DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与「插件」「自动化任务」「使用统计」同级），集中展示并管理当前实际加载的全部 skill —— 全局 `~/.dsh/skills`、全局 `~/.agents/skills`、以及项目/工作区技能。
 
-界面跟随宿主语言设置：在「设置 → 通用设置 → 语言」里切换，**不用刷新页面**，本分区所有文案（标题、按钮、提示、报错）立刻跟着变。实现走宿主官方 i18n 机制 `@deepseek-ai/dsh-client-locale`：`ctx.locale.register` 注册字典 + 分区注册项声明 `locale` 命名空间，宿主注入的 `t` 引用随语言切换而变。
+界面跟随宿主语言设置：在「设置 → 通用设置 → 语言」里切换，**不用刷新页面**，本面板所有文案（标题、按钮、提示、报错）立刻跟着变。实现走宿主官方 i18n 机制 `@deepseek-ai/dsh-client-locale`：`ctx.locale.register` 注册字典 + 组件注册项声明 `locale` 命名空间，宿主注入的 `t` 引用随语言切换而变。
 
-![设置页技能分区](docs/images/01-设置页技能分区.png)
+![侧边栏技能面板](docs/images/01-侧边栏技能面板.png)
+
+点开导航行后是完整面板（作用域切换、搜索、启停开关、详情弹窗、导入与新建）：
+
+![技能主面板](docs/images/10-技能主面板.png)
 
 ## 插件标识
 
@@ -15,9 +19,9 @@ DeepSeek Harness 插件：在**设置页「模型」正下方**新增「技能�
 | npm 包名 | `@bluechonk/dsh-skills-manager` |
 | loader 行 id | `@bluechonk/dsh-skills-manager` |
 | client 模块 id | `@bluechonk/dsh-skills-manager`（必须与包名逐字一致） |
-| 设置分区 id | `dsh-skills-manager`（`settings.section` 槽位内的分区键） |
-| 分区顺序 | `order: 11` —— 紧贴「模型」（order 10）下方 |
-| 分区标题 | 技能 / Skills Manager |
+| 侧边栏条目 id | `skills-manager`（`sidebar.panellist` 的导航行 id，同时是 `main` keyed 槽位的主面板键） |
+| 导航顺序 | `order: 30` —— 排在「插件」(0) / 「自动化任务」(10) / 「使用统计」(20) 之后 |
+| 导航与面板标题 | 技能 / Skills |
 
 包名、loader 行 id、client 模块 id 三者统一使用 `@bluechonk` scope，插件管理器里定位、启用与卸载都以此为准。
 
@@ -96,7 +100,7 @@ https://github.com/bluechonk/dsh-skills-manager
 "dsh": { "profile": { "bundles": ["@bluechonk/dsh-skills-manager"] } }
 ```
 
-然后重启 DSH，设置页导航里「技能」就出现在「模型」下方。
+然后重启 DSH，侧边栏「插件」「自动化任务」「使用统计」下方就会出现「技能」。
 
 ### 方式二：插件市场索引（可浏览、可一键安装）
 
@@ -139,7 +143,7 @@ plugin_manager set_plugin --target "@bluechonk/dsh-skills-manager" --enabled tru
 plugin_manager remove_bundle --target "@bluechonk/dsh-skills-manager"
 ```
 
-安装后刷新 DSH 页面，设置页导航里「技能」出现在「模型」下方。宿主半随 profile 生效，客户端产物由 `dsh-client-hmr` 的 bundle 指纹轮询热替换；页面长时间未刷新时手动 `Ctrl+F5` 即可。
+安装后刷新 DSH 页面，侧边栏「插件」「自动化任务」「使用统计」下方就会出现「技能」。宿主半随 profile 生效，客户端产物由 `dsh-client-hmr` 的 bundle 指纹轮询热替换；页面长时间未刷新时手动 `Ctrl+F5` 即可。
 
 ## 数据通道
 
@@ -173,7 +177,7 @@ dsh-skills-manager/
 ├─ lib/index.js          # host 半：根解析、扫描、路由、写操作
 ├─ lib/roots.js          # 根解析与项目根探测（纯函数）
 ├─ lib/frontmatter.js    # frontmatter 解析与 disable-model-invocation 改写（纯函数）
-├─ client/client.js      # client 半：settings.section 面板 + 详情/导入/新建弹窗
+├─ client/client.js      # client 半：侧边栏导航行 + 主面板 + 详情/导入/新建弹窗
 ├─ locale/{en,zh}.json   # 插件管理器元数据（meta.title / meta.description）
 ├─ icon.svg              # 原创图标
 ├─ docs/                 # 设计与验证记录、实机截图、变更记录
@@ -196,6 +200,7 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
+| 0.1.4 | `v0.1.4` | 从设置页分区改为侧边栏独立面板（`sidebar.panellist` + `main`），与「插件」「自动化任务」「使用统计」同级 |
 | 0.1.3 | `v0.1.3` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
 | 0.1.2 | `v0.1.2` | 描述 / 启停开关 / 导入外部 Agent 技能三处补成真能用（按 DSH 的加载规则诊断与归一化） |
 | 0.1.1 | `v0.1.1` | 界面国际化（跟随宿主语言）、工作区作用域互斥、支持从 GitHub 链接安装、插件市场索引 |

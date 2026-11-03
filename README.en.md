@@ -2,11 +2,15 @@
 
 [中文版](README.md) | **English**
 
-A DeepSeek Harness plugin that adds a **Skills** section right below **Models** in the settings page, so every skill the Harness has actually loaded can be inspected and managed in one place — the global `~/.dsh/skills` and `~/.agents/skills` roots, plus project and workspace roots.
+A DeepSeek Harness plugin that adds a **Skills** panel to the sidebar, alongside **Plugins**, **Automations** and **Usage**, so every skill the Harness has actually loaded can be inspected and managed in one place — the global `~/.dsh/skills` and `~/.agents/skills` roots, plus project and workspace roots.
 
-![Skills section in the settings page](docs/images/01-设置页技能分区.png)
+![Skills panel in the sidebar](docs/images/01-侧边栏技能面板.png)
 
-The plugin UI follows the host's language setting: switch it under "Settings → General → Language" and **no page reload is needed** — every label, button and message in this section switches immediately. The implementation uses the host's official i18n mechanism (`@deepseek-ai/dsh-client-locale`): the dictionary is registered with `ctx.locale.register` and the section registration declares its `locale` namespace, so the `t` reference the host injects changes with the language.
+Clicking the row opens the full panel (scope switching, search, enable switches, detail dialog, import and create):
+
+![Skills panel](docs/images/10-技能主面板.png)
+
+The plugin UI follows the host's language setting: switch it under "Settings → General → Language" and **no page reload is needed** — every label, button and message in this panel switches immediately. The implementation uses the host's official i18n mechanism (`@deepseek-ai/dsh-client-locale`): the dictionary is registered with `ctx.locale.register` and the component registration declares its `locale` namespace, so the `t` reference the host injects changes with the language.
 
 ## Plugin identity
 
@@ -15,9 +19,9 @@ The plugin UI follows the host's language setting: switch it under "Settings →
 | npm package | `@bluechonk/dsh-skills-manager` |
 | loader row id | `@bluechonk/dsh-skills-manager` |
 | client module id | `@bluechonk/dsh-skills-manager` (must match the package name exactly) |
-| settings section id | `dsh-skills-manager` (the key inside the `settings.section` slot) |
-| section order | `order: 11` — directly below **Models** (order 10) |
-| section title | 技能 / Skills |
+| sidebar entry id | `skills-manager` (the `sidebar.panellist` row id, also the `main` keyed slot key) |
+| navigation order | `order: 30` — after **Plugins** (0), **Automations** (10) and **Usage** (20) |
+| navigation and panel title | 技能 / Skills |
 
 Package name, loader row id and client module id all use the `@bluechonk` scope; that is the identifier to use when locating, enabling or removing the plugin in the plugin manager.
 
@@ -95,7 +99,7 @@ The install records the package in the profile's `dependencies` (as `github:blue
 "dsh": { "profile": { "bundles": ["@bluechonk/dsh-skills-manager"] } }
 ```
 
-Then restart DSH: "Skills" shows up below "Models" in the settings navigation.
+Then restart DSH: "Skills" shows up in the sidebar below "Plugins", "Automations" and "Usage".
 
 ### Option 2: plugin market index (browse and install with one click)
 
@@ -136,7 +140,7 @@ plugin_manager set_plugin --target "@bluechonk/dsh-skills-manager" --enabled tru
 plugin_manager remove_bundle --target "@bluechonk/dsh-skills-manager"
 ```
 
-After installing, refresh the DSH page: "Skills" appears below "Models" in the settings navigation. The host half takes effect with the profile; the client artifact is hot-swapped by `dsh-client-hmr` through bundle fingerprint polling — press `Ctrl+F5` if the page has been open for a long time.
+After installing, refresh the DSH page: "Skills" appears in the sidebar below "Plugins", "Automations" and "Usage". The host half takes effect with the profile; the client artifact is hot-swapped by `dsh-client-hmr` through bundle fingerprint polling — press `Ctrl+F5` if the page has been open for a long time.
 
 ## API surface
 
@@ -172,7 +176,7 @@ dsh-skills-manager/
 ├─ lib/index.js          # host half: root resolution, discovery, routes, write operations
 ├─ lib/roots.js          # root resolution and project-root detection (pure functions)
 ├─ lib/frontmatter.js    # frontmatter parsing and disable-model-invocation rewriting (pure functions)
-├─ client/client.js      # client half: settings.section panel + detail/import/create dialogs
+├─ client/client.js      # client half: sidebar row + main panel + detail/import/create dialogs
 ├─ locale/{en,zh}.json   # plugin manager metadata (meta.title / meta.description)
 ├─ icon.svg              # original icon
 ├─ docs/                 # design & verification notes, real captures, changelog
