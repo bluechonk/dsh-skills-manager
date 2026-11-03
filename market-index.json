@@ -16,8 +16,8 @@
         "zh": "技能管理器"
       },
       "description": {
-        "en": "Adds a Skills panel to the sidebar, alongside Plugins, Automations and Usage: browse and manage every skill the Harness has loaded (global ~/.dsh/skills, user-level ~/.agents/skills, and each workspace's .dsh/skills / .agents/skills), with scope switching, search, Markdown details, enable/disable, import, delete and open-folder.",
-        "zh": "在侧边栏新增「技能」独立面板（与「插件」「自动化任务」「使用统计」同级）：集中展示并管理当前加载到的全部技能（全局 ~/.dsh/skills、用户级 ~/.agents/skills，以及各工作区的 .dsh/skills 与 .agents/skills），支持作用域切换、搜索、Markdown 详情、启停、导入、删除与打开目录。"
+        "en": "Adds a Skills panel to the sidebar, alongside Plugins, Automations and Usage: browse and manage every skill the Harness has loaded (global ~/.dsh/skills, user-level ~/.agents/skills, and each workspace's .dsh/skills / .agents/skills), with scope switching, search, Markdown details, on-by-default machine translation of descriptions and bodies, enable/disable, import, delete and open-folder.",
+        "zh": "在侧边栏新增「技能」独立面板（与「插件」「自动化任务」「使用统计」同级）：集中展示并管理当前加载到的全部技能（全局 ~/.dsh/skills、用户级 ~/.agents/skills，以及各工作区的 .dsh/skills 与 .agents/skills），支持作用域切换、搜索、Markdown 详情、描述与正文机器翻译（默认开启）、启停、导入、删除与打开目录。"
       },
       "icon": "https://raw.githubusercontent.com/bluechonk/dsh-skills-manager/main/icon.svg",
       "author": "bluechonk",
@@ -27,12 +27,12 @@
       },
       "versions": [
         {
-          "version": "0.1.4",
-          "publishTimestamp": 1793689135,
+          "version": "0.1.5",
+          "publishTimestamp": 1793710526,
           "source": {
             "type": "git",
             "url": "https://github.com/bluechonk/dsh-skills-manager",
-            "commit": "89f2e746f11a2ce751faabc83e51ae260262dae6"
+            "commit": "5f9ff19c719a8abceaea4e88640f7f23e5c0a03d"
           }
         }
       ]
