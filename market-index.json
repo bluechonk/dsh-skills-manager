@@ -27,12 +27,12 @@
       },
       "versions": [
         {
-          "version": "0.1.5",
-          "publishTimestamp": 1793710526,
+          "version": "0.1.6",
+          "publishTimestamp": 1793712298,
           "source": {
             "type": "git",
             "url": "https://github.com/bluechonk/dsh-skills-manager",
-            "commit": "43fcc5fd36d473be5c5d01996edbb5213757d574"
+            "commit": "36b95a2261787768dd7d2722bc0e46411158cf5b"
           }
         }
       ]

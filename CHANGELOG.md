@@ -2,6 +2,22 @@
 
 本文件记录 dsh-skills-manager 的版本变更。
 
+## 0.1.6
+
+修复插件图标不显示。
+
+### 修复
+
+- **「已安装插件」页显示占位图**：manifest 只把 `icon.svg` 放进 `files`，没有声明图标，
+  插件管理器取不到。现在同时补上顶层 `"icon": "./icon.svg"` 与 `exports` 的 `"./icon"`
+  （与 `dsh-modelmux` 一致的写法）。
+
+### 验证
+
+- `dsh web` 验证实例（插件集对齐 desktop profile）实机：「已安装插件」里本插件显示为
+  `icon.svg`（蓝色圆角方块 + 白色星形）；同页未声明图标的 `@bluechonk/dsh-mcp-manager`
+  仍是占位图，`dsh-usage-stats` / `dsh-modelmux` 各自正常。
+
 ## 0.1.5
 
 技能详情支持机器翻译（默认开启）。
