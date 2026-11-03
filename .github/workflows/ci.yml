@@ -4,6 +4,8 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  # 手动触发：顺带让 GitHub 重新注册本工作流（此前从未注册成功，PR 上一直没有 CI 检查）
+  workflow_dispatch:
 
 jobs:
   test:
