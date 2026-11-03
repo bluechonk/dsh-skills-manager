@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 
-import { invocationOf, isDisabledFlag, isLosslessUtf8, isValidSkillName, parseFrontmatter, setDisableModelInvocation } from '../lib/frontmatter.js'
+import { invocationOf, isDisabledFlag, isLosslessUtf8, isValidSkillName, parseFrontmatter, setSkillInvocation } from '../lib/frontmatter.js'
 import {
   deriveDescription,
   diagnoseFrontmatter,
@@ -92,58 +92,71 @@ test('parseFrontmatter 缺少闭合或无 frontmatter 时返回 null', () => {
   assert.equal(parseFrontmatter('---\nname: x\n'), null)
 })
 
-test('setDisableModelInvocation 新增禁用键且保留正文', () => {
+test('setSkillInvocation 停用时同时写 model 与 user 两个键', () => {
+  // DSH 分别用 modelInvocable / userInvocable 把守两条入口，只写 model 键时
+  // 用户仍能在对话里点名调用，开关等于没关。
   const text = ['---', 'name: demo', 'description: 描述', '---', '', '# 正文', '内容'].join('\n')
-  const next = setDisableModelInvocation(text, true)
+  const next = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   assert.match(next, /disable-model-invocation: true/)
+  assert.match(next, /user-invocable: false/)
   assert.match(next, /name: demo/)
   assert.match(next, /# 正文/)
   assert.equal(next.split('\n').filter((line) => line === '---').length, 2)
 })
 
-test('setDisableModelInvocation 幂等且可移除', () => {
+test('setSkillInvocation 幂等且可移除', () => {
   const text = ['---', 'name: demo', 'description: 描述', '---', 'body'].join('\n')
-  const disabled = setDisableModelInvocation(text, true)
-  assert.equal(setDisableModelInvocation(disabled, true), disabled)
-  const enabled = setDisableModelInvocation(disabled, false)
+  const disabled = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
+  assert.equal(setSkillInvocation(disabled, { modelInvocable: false, userInvocable: false }), disabled)
+  const enabled = setSkillInvocation(disabled, { modelInvocable: true, userInvocable: true })
   assert.equal(enabled, text)
 })
 
-test('setDisableModelInvocation 改写既有键而不是追加', () => {
-  const text = ['---', 'name: demo', 'disable-model-invocation: false', 'description: 描述', '---', 'body'].join('\n')
-  const next = setDisableModelInvocation(text, true)
+test('setSkillInvocation 改写既有键而不是追加', () => {
+  const text = ['---', 'name: demo', 'disable-model-invocation: false', 'user-invocable: true', 'description: 描述', '---', 'body'].join('\n')
+  const next = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   assert.equal(next.match(/disable-model-invocation/g).length, 1)
+  assert.equal(next.match(/user-invocable/g).length, 1)
   assert.match(next, /disable-model-invocation: true/)
+  assert.match(next, /user-invocable: false/)
 })
 
-test('setDisableModelInvocation 对缺 frontmatter 的文件报错', () => {
-  assert.throws(() => setDisableModelInvocation('没有 frontmatter', true))
+test('setSkillInvocation 对缺 frontmatter 的文件报错', () => {
+  assert.throws(() => setSkillInvocation('没有 frontmatter', { modelInvocable: false }))
 })
 
-test('setDisableModelInvocation 保留 CRLF 换行风格', () => {
+test('setSkillInvocation 保留 CRLF 换行风格', () => {
   const text = ['---', 'name: demo', 'description: 描述', '---', '', '# 正文', ''].join('\r\n')
-  const disabled = setDisableModelInvocation(text, true)
+  const disabled = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   assert.match(disabled, /disable-model-invocation: true\r\n/)
+  assert.match(disabled, /user-invocable: false\r\n/)
   assert.ok(disabled.includes('\r\n'))
   assert.ok(!/[^\r]\n/.test(disabled), '不应混入裸 LF')
-  const enabled = setDisableModelInvocation(disabled, false)
+  const enabled = setSkillInvocation(disabled, { modelInvocable: true, userInvocable: true })
   assert.equal(enabled, text)
 })
 
-test('setDisableModelInvocation 保留 UTF-8 BOM', () => {
+test('setSkillInvocation 保留 UTF-8 BOM', () => {
   const text = '\uFEFF' + ['---', 'name: demo', 'description: 描述', '---', 'body'].join('\n')
-  const disabled = setDisableModelInvocation(text, true)
+  const disabled = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   assert.ok(disabled.startsWith('\uFEFF'))
   assert.match(disabled, /disable-model-invocation: true/)
-  assert.equal(setDisableModelInvocation(disabled, false), text)
+  assert.equal(setSkillInvocation(disabled, { modelInvocable: true, userInvocable: true }), text)
 })
 
-test('setDisableModelInvocation 只增删目标键，其余行逐字不动', () => {
+test('setSkillInvocation 只增删目标键，其余行逐字不动', () => {
   const text = ['---', 'name: demo', 'description: "含 \\"引号\\" 的描述"', 'whenToUse: 何时用', '---', '', '正文保持不动', ''].join('\n')
-  const disabled = setDisableModelInvocation(text, true)
+  const disabled = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   assert.match(disabled, /description: "含 \\"引号\\" 的描述"/)
   assert.match(disabled, /whenToUse: 何时用/)
   assert.match(disabled, /正文保持不动/)
+})
+
+test('setSkillInvocation 只改模型侧时不动用户键', () => {
+  const text = ['---', 'name: demo', 'description: 描述', 'user-invocable: false', '---', 'body'].join('\n')
+  const next = setSkillInvocation(text, { modelInvocable: false })
+  assert.match(next, /disable-model-invocation: true/)
+  assert.match(next, /user-invocable: false/)
 })
 
 test('isDisabledFlag 接受 DSH 的布尔写法', () => {
@@ -174,15 +187,16 @@ test('parseFrontmatter 不把块标量里的 --- 当成结束标记', () => {
   assert.equal(parsed.body.trim(), 'body')
 })
 
-test('setDisableModelInvocation 不把键插进块标量里', () => {
+test('setSkillInvocation 不把键插进块标量里', () => {
   const text = ['---', 'name: demo', 'description: |', '  第一段', '  ---', '  第二段', '---', 'body'].join('\n')
-  const disabled = setDisableModelInvocation(text, true)
+  const disabled = setSkillInvocation(text, { modelInvocable: false, userInvocable: false })
   const lines = disabled.split('\n')
   const end = lines.indexOf('---', 1)
   const keyIndex = lines.indexOf('disable-model-invocation: true')
   // 键必须落在 frontmatter 内（结束标记之前），且在 description 块之后——不能插进块里。
   assert.ok(keyIndex > 0 && keyIndex < end)
   assert.ok(keyIndex > lines.indexOf('  第二段'))
+  assert.ok(lines.indexOf('user-invocable: false') > lines.indexOf('  第二段'))
   // 描述块内容保持原样
   assert.match(disabled, /  第一段/)
   assert.match(disabled, /  第二段/)

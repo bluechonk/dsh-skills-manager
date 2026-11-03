@@ -207,12 +207,12 @@ test('scanExternalRoots 列出外部目录并标记不存在的目录', () => {
   }
 })
 
-test('externalAgentRoots 覆盖 Codex CLI 等常见目录', () => {
+test('externalAgentRoots 覆盖常见 Agent 目录（含 ZCode）', () => {
   const roots = externalAgentRoots('C:/home')
   const ids = roots.map((root) => root.id)
-  assert.ok(ids.includes('codex'))
-  assert.ok(ids.includes('claude'))
+  for (const id of ['codex', 'claude', 'gemini', 'qwen', 'zcode']) assert.ok(ids.includes(id), `缺少来源 ${id}`)
   assert.equal(roots.find((root) => root.id === 'codex').path, join('C:/home', '.codex', 'skills'))
+  assert.equal(roots.find((root) => root.id === 'zcode').path, join('C:/home', '.zcode', 'skills'))
 })
 
 test('withinRoot 只认根目录之内', () => {

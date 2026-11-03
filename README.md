@@ -8,7 +8,7 @@ DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与�
 
 ![侧边栏技能面板](docs/images/01-侧边栏技能面板.png)
 
-点开导航行后是完整面板（作用域切换、搜索、启停开关、详情弹窗、导入与新建）：
+点开导航行后是完整面板（作用域切换、搜索、启停开关、详情弹窗、导入外部技能）：
 
 ![技能主面板](docs/images/10-技能主面板.png)
 
@@ -32,10 +32,10 @@ DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与�
 | 作用域下拉 | 「用户 · 本机」只显示全局 `~/.dsh/skills`、用户级 `~/.agents/skills` 与预设内置技能；「工作区」分组列出各工作区，**选中某个工作区就只显示该工作区的** `<工作路径>/.dsh/skills` 与 `<工作路径>/.agents/skills`（不混入全局/用户级）。切换工作区只重扫该工作区 |
 | 技能计数 | 顶部「技能 N」为当前作用域可见的技能总数 |
 | 搜索 | 按名称、描述、路径实时过滤 |
-| 已安装列表 | 名称 + 描述 + 启用开关 + 删除按钮；开关写 `disable-model-invocation`（DSH 原生语义）并顺手清掉 DSH 已废弃的旧式调用键；删除只允许落在受管根之下 |
+| 已安装列表 | 名称 + 描述 + 启用开关 + 删除按钮；开关同时写 `disable-model-invocation: true` 与 `user-invocable: false`（DSH 用这两个键分别把守模型调用与用户点名调用），并顺手清掉 DSH 已废弃的旧式调用键；删除只允许落在受管根之下 |
 | 兼容性提示 | DSH 要求 frontmatter 同时有 `name` 与 `description`，且不含旧式调用键——不满足的技能标「DSH 不加载」并把开关置灰（这类文件会被宿主整个忽略） |
 | 内置分组 | 运行时注册与随包内置的技能只读展示，按来源分组 |
-| 更多菜单 | 「导入」外部 Agent 技能：来源可展开，逐个技能展示名称与描述，可单选或整源勾选；复制导入会自动补齐缺失的 description 并移除旧式调用键 |
+| 更多菜单 | 「导入」外部 Agent 技能：来源覆盖 Codex CLI / Claude Code / Gemini CLI / Qwen Code / ZCode（`~/.zcode/skills`），来源可展开，逐个技能展示名称与描述，可单选或整源勾选；复制导入会自动补齐缺失的 description 并移除旧式调用键 |
 | 详情弹窗 | 标题 +「Skill」徽章；描述（frontmatter 的 `description`，Markdown 渲染）；**文件内容**（SKILL.md 正文，Markdown 渲染的滚动卡片，形态对齐 Codex 技能页）；范围（个人 / 项目名 / 内置）、状态（已启用 / 已禁用）、文件路径（行内等宽路径 + 复制图标） |
 | 翻译 | 详情弹窗默认开启翻译：**描述与正文**自动译成中文（技能名是标识符，不翻译），Markdown 结构与代码块保留；可点「看原文」对照，也可用标题栏的「翻译」按钮整体关掉。复用宿主的 `translator` 服务（与「思考过程机器翻译」同一套 Bing/Google 通道），未启用 `dsh-experimental-cot-translation-bundle` 时提示不可用并退回原文 |
 
@@ -161,7 +161,6 @@ plugin_manager remove_bundle --target "@bluechonk/dsh-skills-manager"
 | POST | `/dsh-skills-manager/reveal` | 在系统文件管理器中打开技能目录 |
 | POST | `/dsh-skills-manager/toggle` | 启用 / 禁用（改写 frontmatter） |
 | POST | `/dsh-skills-manager/remove` | 删除受管根下的技能 |
-| POST | `/dsh-skills-manager/create` | 新建技能目录 |
 | POST | `/dsh-skills-manager/import` | 从外部目录导入（软链 / 复制） |
 | GET | `/dsh-skills-manager/external` | 外部 Agent 技能目录扫描 |
 
@@ -170,7 +169,7 @@ plugin_manager remove_bundle --target "@bluechonk/dsh-skills-manager"
 - 写操作的目标一律由宿主按「已扫描到的技能」反查得到，**不接受客户端传入的任意绝对路径**；项目落点只认已登记工作区。
 - 删除仅限受管根（`user-dsh` / `user-agents` / `project-dsh` / `project-agents`）；软链只删链接不删源；删除前校验目标不等于受管根本身；界面上有二次确认并列出路径。
 - 官方包内置技能（`node_modules` 内，按真实路径判定）拒绝改写与删除，避免破坏官方包。
-- 启停写的是 `disable-model-invocation`，这是 DSH 原生语义；`~/.agents/skills` 与其他 Agent 工具共享，该键对 Claude Code 等同样生效。非 UTF-8（如 GBK）编码的文件会被拒绝改写，避免内容被写成乱码。
+- 启停同时写 `disable-model-invocation: true` 与 `user-invocable: false`：DSH 用这两个键分别把守「模型自行加载」与「用户点名调用」两条入口，只写前者时用户仍能在对话里点名调用，技能内容照样被注入。`~/.agents/skills` 与其他 Agent 工具共享，这两个键对 Claude Code 等同样生效。非 UTF-8（如 GBK）编码的文件会被拒绝改写，避免内容被写成乱码。
 - 插件不写任何持久化数据，仅在 profile 目录留一份 `skills-manager.log` 审计日志；不联网、不上传。
 
 ## 目录结构
@@ -181,8 +180,8 @@ dsh-skills-manager/
 ├─ cordis.patch.yml      # loader 插入行（id / name 均为 @bluechonk/dsh-skills-manager）
 ├─ lib/index.js          # host 半：根解析、扫描、路由、写操作
 ├─ lib/roots.js          # 根解析与项目根探测（纯函数）
-├─ lib/frontmatter.js    # frontmatter 解析与 disable-model-invocation 改写（纯函数）
-├─ client/client.js      # client 半：侧边栏导航行 + 主面板 + 详情/导入/新建弹窗
+├─ lib/frontmatter.js    # frontmatter 解析与调用策略（两个键）改写（纯函数）
+├─ client/client.js      # client 半：侧边栏导航行 + 主面板 + 详情/导入弹窗
 ├─ locale/{en,zh}.json   # 插件管理器元数据（meta.title / meta.description）
 ├─ icon.svg              # 原创图标
 ├─ docs/                 # 设计与验证记录、实机截图、变更记录
@@ -205,6 +204,7 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
+| 0.1.7 | `v0.1.7` | 移除「新建」；导入补 ZCode 来源；修好技能启停（同时写 `user-invocable`） |
 | 0.1.6 | `v0.1.6` | 修复插件图标不显示（补 manifest 的 `icon` 声明） |
 | 0.1.5 | `v0.1.5` | 技能详情机器翻译（描述 + 正文，默认开启，复用宿主 translator 服务） |
 | 0.1.4 | `v0.1.4` | 从设置页分区改为侧边栏独立面板（`sidebar.panellist` + `main`），与「插件」「自动化任务」「使用统计」同级 |
@@ -216,7 +216,7 @@ npm run check     # 语法检查（lib 与 client）
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.6"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.7"
 ```
 
 ## 仓库

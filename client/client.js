@@ -206,7 +206,6 @@ window.__ModuleLoader__.load({
     const IconSearch = (p) => h(Svg, p, h("circle", { cx: 11, cy: 11, r: 7 }), h("path", { d: "m20 20-3.2-3.2" }));
     const IconMore = (p) => h(Svg, p, h("circle", { cx: 5, cy: 12, r: 1.6, fill: "currentColor" }), h("circle", { cx: 12, cy: 12, r: 1.6, fill: "currentColor" }), h("circle", { cx: 19, cy: 12, r: 1.6, fill: "currentColor" }));
     const IconRefresh = (p) => h(Svg, p, h("path", { d: "M20 11a8 8 0 1 0-2.3 5.7" }), h("path", { d: "M20 4v7h-7" }));
-    const IconPlus = (p) => h(Svg, p, h("path", { d: "M12 5v14M5 12h14" }));
     const IconTrash = (p) => h(Svg, p, h("path", { d: "M4 7h16M10 11v6M14 11v6" }), h("path", { d: "M6 7l1 13h10l1-13" }), h("path", { d: "M9 7V4h6v3" }));
     const IconClose = (p) => h(Svg, p, h("path", { d: "m6 6 12 12M18 6 6 18" }));
     const IconCheck = (p) => h(Svg, p, h("path", { d: "m5 13 4 4 10-10" }));
@@ -512,11 +511,9 @@ window.__ModuleLoader__.load({
         "scope.personal": "个人",
         "scope.builtin": "内置",
         "scope.workspace": "工作区",
-        "action.new": "新建",
         "action.refresh": "刷新",
         "action.import": "导入",
         "action.more": "更多操作",
-        "action.create": "创建",
         "action.cancel": "取消",
         "action.delete": "删除",
         "action.retry": "重试",
@@ -548,8 +545,6 @@ window.__ModuleLoader__.load({
         "import.noDescription": "（没有描述；复制导入时会自动补齐）",
         "import.notLoadable": "不符合 DSH 加载要求",
         "import.willNormalize": "导入时自动修正",
-        "create.content": "正文（可选）",
-        "create.contentPlaceholder": "这个技能具体怎么做（写进 SKILL.md 正文）",
         "detail.truncated": "文件较大，正文已截断显示。",
         "detail.noDescription": "（该技能没有描述）",
         "detail.noContent": "（该技能没有正文）",
@@ -577,14 +572,6 @@ window.__ModuleLoader__.load({
         "import.done": "已导入 {n} 个技能",
         "import.failed": "，失败 {n} 个",
         "import.selectSource": "选择 {label} 的全部技能",
-        "create.title": "新建技能",
-        "create.name": "名称（kebab-case，仅小写字母、数字与连字符）",
-        "create.namePlaceholder": "my-skill",
-        "create.description": "描述",
-        "create.descriptionPlaceholder": "这个技能解决什么问题",
-        "create.hint": "将创建到 {target}，并生成一份最小可用的 SKILL.md。",
-        "create.targetGlobal": "全局 ~/.dsh/skills 目录",
-        "create.targetProject": "当前工作区的 .dsh/skills 目录",
         "delete.title": "删除技能",
         "delete.question": "确定删除技能「{name}」？",
         "delete.note": "技能目录下的全部文件都会被移除，此操作不可撤销。",
@@ -592,7 +579,9 @@ window.__ModuleLoader__.load({
         "state.loadFailed": "加载失败：{error}",
         "state.empty": "没有找到任何技能。",
         "state.registryUnavailable": "技能注册表暂不可用，当前仅显示本地扫描结果。",
-        "switch.enable": "启用模型调用 {name}",
+        "switch.enable": "启用 {name}",
+        "switch.disable": "停用 {name}",
+        "switch.hint": "停用后：模型不会再把它放进会话技能目录、也无法用 skill 工具加载；用户也不能在对话里点名调用。已经注入当前会话的内容仍留在历史里。",
         "aria.switch": "开关",
         "aria.dialog": "对话框",
         "root.userDsh": "全局 DSH",
@@ -643,11 +632,9 @@ window.__ModuleLoader__.load({
         "scope.personal": "Personal",
         "scope.builtin": "Built-in",
         "scope.workspace": "Workspace",
-        "action.new": "New",
         "action.refresh": "Refresh",
         "action.import": "Import",
         "action.more": "More actions",
-        "action.create": "Create",
         "action.cancel": "Cancel",
         "action.delete": "Delete",
         "action.retry": "Retry",
@@ -679,8 +666,6 @@ window.__ModuleLoader__.load({
         "import.noDescription": "(no description; it is filled in when copying)",
         "import.notLoadable": "Not loadable by DSH",
         "import.willNormalize": "Fixed on import",
-        "create.content": "Content (optional)",
-        "create.contentPlaceholder": "How this skill works (written into the SKILL.md body)",
         "detail.truncated": "The file is large; the content is truncated.",
         "detail.noDescription": "(This skill has no description)",
         "detail.noContent": "(This skill has no content)",
@@ -708,14 +693,6 @@ window.__ModuleLoader__.load({
         "import.done": "Imported {n} skills",
         "import.failed": ", {n} failed",
         "import.selectSource": "Select all skills from {label}",
-        "create.title": "New Skill",
-        "create.name": "Name (kebab-case: lowercase letters, digits and hyphens only)",
-        "create.namePlaceholder": "my-skill",
-        "create.description": "Description",
-        "create.descriptionPlaceholder": "What this skill solves",
-        "create.hint": "It will be created in {target} with a minimal SKILL.md.",
-        "create.targetGlobal": "the global ~/.dsh/skills folder",
-        "create.targetProject": "the current workspace's .dsh/skills folder",
         "delete.title": "Delete Skill",
         "delete.question": "Delete skill \u201c{name}\u201d?",
         "delete.note": "All files in the skill folder will be removed. This cannot be undone.",
@@ -723,7 +700,9 @@ window.__ModuleLoader__.load({
         "state.loadFailed": "Failed to load: {error}",
         "state.empty": "No skills found.",
         "state.registryUnavailable": "The skill registry is unavailable; only locally scanned results are shown.",
-        "switch.enable": "Enable model invocation: {name}",
+        "switch.enable": "Enable {name}",
+        "switch.disable": "Disable {name}",
+        "switch.hint": "When disabled: the model no longer lists it in the session skill catalog and cannot load it with the skill tool; the user cannot invoke it by name either. Content already injected into the current session stays in the history.",
         "aria.switch": "Switch",
         "aria.dialog": "Dialog",
         "root.userDsh": "Global DSH",
@@ -834,6 +813,7 @@ window.__ModuleLoader__.load({
         role: "switch",
         "aria-checked": on ? "true" : "false",
         "aria-label": props.label || tr(currentT, "aria.switch"),
+        title: props.title || undefined,
         "data-on": on ? "true" : "false",
         disabled: props.disabled || false,
         onClick: (event) => { event.stopPropagation(); props.onChange(!on); },
@@ -1305,90 +1285,6 @@ window.__ModuleLoader__.load({
     }
 
     /* ---------------------------------------------------------------- */
-    /* 新建弹窗                                                          */
-    /* ---------------------------------------------------------------- */
-
-    function CreateModal(props) {
-      const t = props.t || currentT || fallbackT();
-      const [name, setName] = useState("");
-      const [description, setDescription] = useState("");
-      const [content, setContent] = useState("");
-      const [error, setError] = useState(null);
-      const [busy, setBusy] = useState(false);
-      // 同步锁：busy 是异步生效的，连点两次会发两次请求（第二次 409）。
-      const submitting = useRef(false);
-
-      const submit = async () => {
-        if (submitting.current) return;
-        submitting.current = true;
-        setBusy(true);
-        setError(null);
-        try {
-          await apiPost("/create", {
-            name: name.trim(),
-            description: description.trim(),
-            content: content.trim(),
-            cwd: props.cwd,
-            target: props.scopeKind === "project" ? "project" : "global",
-          });
-          props.onCreated();
-          props.onClose();
-        } catch (err) {
-          setError(localizeError(err));
-        } finally {
-          submitting.current = false;
-          setBusy(false);
-        }
-      };
-
-      return h(Modal, { onClose: props.onClose },
-        h("div", { className: "dsm-modalHead" },
-          h("span", { className: "dsm-modalTitle" }, t("create.title")),
-          h("div", { style: { marginLeft: "auto" } },
-            IconButton({ className: "dsm-iconBtnSm", label: "关闭", onClick: props.onClose }, h(IconClose, null))),
-        ),
-        h("div", { className: "dsm-modalBody" },
-          h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, t("create.name")),
-            h("input", {
-              className: "dsm-input",
-              value: name,
-              placeholder: t("create.namePlaceholder"),
-              maxLength: 64,
-              onChange: (event) => setName(event.target.value),
-            }),
-          ),
-          h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, t("create.description") + "（" + description.length + "/500）"),
-            h("textarea", {
-              className: "dsm-textarea",
-              value: description,
-              placeholder: t("create.descriptionPlaceholder"),
-              maxLength: 500,
-              onChange: (event) => setDescription(event.target.value),
-            }),
-          ),
-          h("div", { className: "dsm-field" },
-            h("div", { className: "dsm-label" }, t("create.content")),
-            h("textarea", {
-              className: "dsm-textarea",
-              value: content,
-              placeholder: t("create.contentPlaceholder"),
-              onChange: (event) => setContent(event.target.value),
-            }),
-          ),
-          error ? h("div", { className: "dsm-error" }, error) : null,
-          h("div", { className: "dsm-footNote" }, t("create.hint", { target: props.scopeKind === "project" ? t("create.targetProject") : t("create.targetGlobal") })),
-          h("div", { style: { display: "flex", justifyContent: "flex-end", gap: "8px", marginTop: "4px" } },
-            h("button", { type: "button", className: "dsm-btnText", onClick: props.onClose }, t("action.cancel")),
-            h("button", { type: "button", className: "dsm-primary", disabled: busy || name.trim() === "" || description.trim() === "", onClick: submit },
-              h(IconPlus, null), h("span", null, t("action.create"))),
-          ),
-        ),
-      );
-    }
-
-    /* ---------------------------------------------------------------- */
     /* 主面板                                                            */
     /* ---------------------------------------------------------------- */
 
@@ -1436,7 +1332,6 @@ window.__ModuleLoader__.load({
       const [scope, setScope] = useState({ kind: "global", path: "", title: "" });
       const [detail, setDetail] = useState(null);
       const [showImport, setShowImport] = useState(false);
-      const [showCreate, setShowCreate] = useState(false);
       const [notice, setNotice] = useState(null);
       const [confirmRemove, setConfirmRemove] = useState(null);
       // 请求序号：作用域快速切换时，过期响应不得覆盖新数据。
@@ -1586,7 +1481,8 @@ window.__ModuleLoader__.load({
             ? h(Switch, {
               on: enabled,
               disabled: blocked,
-              label: blocked ? t("list.blockedTitle", { reason: issueText }) : t("switch.enable", { name: skill.name }),
+              label: blocked ? t("list.blockedTitle", { reason: issueText }) : t(enabled ? "switch.disable" : "switch.enable", { name: skill.name }),
+              title: t("switch.hint"),
               onChange: (next) => toggleSkill(skill, next),
             })
             : h("span", { className: "dsm-badge" }, t("list.readonly")),
@@ -1654,8 +1550,6 @@ window.__ModuleLoader__.load({
               ],
             }),
             IconButton({ className: "dsm-iconBtn", label: t("action.refresh"), onClick: () => load(true) }, h(IconRefresh, null)),
-            h("button", { type: "button", className: "dsm-primary", onClick: () => setShowCreate(true) },
-              h(IconPlus, null), h("span", null, t("action.new"))),
           ),
         ),
 
@@ -1694,7 +1588,6 @@ window.__ModuleLoader__.load({
 
         detail ? h(DetailModal, { t, skill: detail, cwd, onClose: () => setDetail(null) }) : null,
         showImport ? h(ImportModal, { t, cwd, scopeKind: scope.kind, onClose: () => setShowImport(false), onImported: () => loadRef.current() }) : null,
-        showCreate ? h(CreateModal, { t, cwd, scopeKind: scope.kind, onClose: () => setShowCreate(false), onCreated: () => loadRef.current() }) : null,
         confirmRemove
           ? h(Modal, { onClose: () => setConfirmRemove(null), label: t("delete.title") },
             h("div", { className: "dsm-modalHead" },
