@@ -157,50 +157,59 @@ test('超大请求体返回 413', async () => {
   }
 })
 
-test('新建/导入后技能立刻出现在面板里（写操作要清掉扫描缓存）', async () => {
+test('写操作后状态立刻反映（写操作要清掉扫描缓存）', async () => {
   const host = makeHost()
   try {
+    const dir = join(host.skillsRoot, 'fresh-skill')
+    mkdirSync(dir, { recursive: true })
+    writeFileSync(join(dir, 'SKILL.md'), '---\nname: fresh-skill\ndescription: 新写的技能\n---\n', 'utf8')
     // 先读一次，把扫描缓存热起来
-    await call(host, '/dsh-skills-manager/state')
-    const created = await call(host, '/dsh-skills-manager/create', {
+    const first = (await call(host, '/dsh-skills-manager/state')).json()
+    const before = first.skills.find((skill) => skill.name === 'fresh-skill')
+    assert.ok(before, '新写的技能应出现在面板里')
+    assert.equal(before.invocation.modelInvocable, true)
+
+    const disabled = await call(host, '/dsh-skills-manager/toggle', {
       method: 'POST',
-      body: JSON.stringify({ name: 'fresh-skill', description: '刚建的技能' }),
+      body: JSON.stringify({ name: 'fresh-skill', disabled: true }),
     })
-    assert.equal(created.statusCode, 200)
-    // 不等 TTL：紧接着读状态就要能看到
-    const state = (await call(host, '/dsh-skills-manager/state')).json()
-    const found = state.skills.find((skill) => skill.name === 'fresh-skill')
-    assert.ok(found, '新建的技能应立刻出现在面板里')
-    assert.equal(found.description, '刚建的技能')
+    assert.equal(disabled.statusCode, 200)
+    // 不等 TTL：紧接着读状态就要看到停用后的策略
+    const second = (await call(host, '/dsh-skills-manager/state')).json()
+    const after = second.skills.find((skill) => skill.name === 'fresh-skill')
+    assert.equal(after.invocation.modelInvocable, false)
+    assert.equal(after.invocation.userInvocable, false)
   } finally {
     rmSync(host.home, { recursive: true, force: true })
   }
 })
 
-test('写操作全链路：新建 → 禁用 → 启用 → 删除', async () => {
+test('写操作全链路：禁用 → 启用 → 删除', async () => {
   const host = makeHost()
   try {
-    const created = await call(host, '/dsh-skills-manager/create', {
-      method: 'POST',
-      body: JSON.stringify({ name: 'demo-skill', description: '自检技能' }),
-    })
-    assert.equal(created.statusCode, 200)
-    const file = join(host.skillsRoot, 'demo-skill', 'SKILL.md')
-    assert.ok(readFileSync(file, 'utf8').includes('name: demo-skill'))
+    const dir = join(host.skillsRoot, 'demo-skill')
+    mkdirSync(dir, { recursive: true })
+    const file = join(dir, 'SKILL.md')
+    writeFileSync(file, '---\nname: demo-skill\ndescription: 自检技能\n---\n', 'utf8')
 
     const disabled = await call(host, '/dsh-skills-manager/toggle', {
       method: 'POST',
       body: JSON.stringify({ name: 'demo-skill', disabled: true }),
     })
     assert.equal(disabled.statusCode, 200)
-    assert.match(readFileSync(file, 'utf8'), /disable-model-invocation: true/)
+    const off = readFileSync(file, 'utf8')
+    // 两个键必须一起写：只写 model 键时用户仍能在对话里点名调用。
+    assert.match(off, /disable-model-invocation: true/)
+    assert.match(off, /user-invocable: false/)
 
     const enabled = await call(host, '/dsh-skills-manager/toggle', {
       method: 'POST',
       body: JSON.stringify({ name: 'demo-skill', disabled: false }),
     })
     assert.equal(enabled.statusCode, 200)
-    assert.doesNotMatch(readFileSync(file, 'utf8'), /disable-model-invocation/)
+    const on = readFileSync(file, 'utf8')
+    assert.doesNotMatch(on, /disable-model-invocation/)
+    assert.doesNotMatch(on, /user-invocable/)
 
     const removed = await call(host, '/dsh-skills-manager/remove', {
       method: 'POST',
@@ -275,19 +284,6 @@ test('未登记的技能返回 404，非法来源返回 400', async () => {
       body: JSON.stringify({ source: 'nope', name: 'x', mode: 'copy' }),
     })
     assert.equal(badImport.statusCode, 400)
-  } finally {
-    rmSync(host.home, { recursive: true, force: true })
-  }
-})
-
-test('未登记工作区的 cwd 不会成为项目落点', async () => {
-  const host = makeHost({ workspaces: [] })
-  try {
-    const created = await call(host, '/dsh-skills-manager/create', {
-      method: 'POST',
-      body: JSON.stringify({ name: 'proj-skill', description: '项目技能', cwd: 'C:/Windows/Temp', target: 'project' }),
-    })
-    assert.equal(created.statusCode, 400)
   } finally {
     rmSync(host.home, { recursive: true, force: true })
   }

@@ -2,6 +2,28 @@
 
 本文件记录 dsh-skills-manager 的版本变更。
 
+## 0.1.7
+
+三处调整：去掉「新建」、导入补 ZCode 来源、修好技能启停。
+
+### 变更
+
+- **移除「新建」**：工具条不再提供新建技能，主机半的 `POST /create` 路由一并下线。
+- **导入来源新增 ZCode**：`~/.zcode/skills` 加入外部 Agent 技能来源，与 Codex CLI /
+  Claude Code / Gemini CLI / Qwen Code 并列。
+- **修好技能启停**：此前只写 `disable-model-invocation`，而 DSH 用 `modelInvocable` /
+  `userInvocable` 分别把守两条入口——模型确实无法自行加载，但用户仍能在对话里点名调用
+  （`agent/pre-step` 只检查 `isUserInvocable`），技能内容照样被注入，开关形同虚设。
+  现在停用同时写 `disable-model-invocation: true` 与 `user-invocable: false`，启用则两行都删。
+
+### 验证
+
+- `dsh web` 验证实例（插件集对齐 desktop profile）实机：
+  - 工具条只剩「…（导入）」与刷新，新建入口消失；
+  - 导入弹窗来源列出 ZCode（`C:\Users\bluechonk\.zcode\skills`）；
+  - 开关往返：关掉后 SKILL.md 出现两个键，开回来后文件与操作前逐字一致。
+- `npm test` 70 项全绿（新增 ZCode 来源、两个键一起写/删除、部分更新不误改另一侧等用例）。
+
 ## 0.1.6
 
 修复插件图标不显示。
