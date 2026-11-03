@@ -2,12 +2,14 @@
   "name": "@bluechonk/dsh-skills-manager",
   "version": "0.1.5",
   "description": "DeepSeek Harness 插件 @bluechonk/dsh-skills-manager：侧边栏「技能」独立面板（与「插件」「自动化任务」「使用统计」同级）——展示并管理当前加载的全部 skills（全局 ~/.dsh/skills、~/.agents/skills、项目与工作区技能根），支持作用域切换、搜索、Markdown 详情、描述与正文机器翻译（默认开启，复用宿主 translator 服务）、启停开关、从外部 Agent 技能目录导入（软链或复制）、删除与打开目录。",
+  "icon": "./icon.svg",
   "type": "module",
   "main": "lib/index.js",
   "exports": {
     ".": "./lib/index.js",
     "./client": "./client/client.js",
     "./cordis.patch.yml": "./cordis.patch.yml",
+    "./icon": "./icon.svg",
     "./package.json": "./package.json"
   },
   "dsh": {
