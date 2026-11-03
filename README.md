@@ -209,7 +209,7 @@ npm run check     # 语法检查（lib 与 client）
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.3"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.4"
 ```
 
 ## 仓库
