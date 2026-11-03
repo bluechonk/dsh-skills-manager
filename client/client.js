@@ -1,41 +1,6 @@
-    function apply(ctx) {
-      ensureStyles();
-      if (ctx === null || typeof ctx !== "object" || !ctx.slots) {
-        console.warn("[dsh-skills-manager] 宿主未提供 slots，设置分区未注册。");
-        return;
-      }
-      // 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale。
-      // 字典注册走 ctx.effect——卸载时自动注销，避免热重载后「同一命名空间重复注册」抛错。
-      let boundT = null;
-      if (ctx.locale !== null && ctx.locale !== undefined) {
-        ctx.effect(
-          () => ctx.locale.register(LOCALE_NS, LOCALE_DICT),
-          "dsh-skills-manager: locale dictionary",
-        );
-        // 绑定函数引用稳定，但每次调用读**当前**语言——分区 label 用它即可跟随切换
-        boundT = ctx.locale.bind(LOCALE_NS);
-        currentT = boundT;
-      } else {
-        console.warn("[dsh-skills-manager] 宿主未提供 locale，分区保持中文。");
-      }
-      ctx.slots.inject("settings.section", () =>
-        ctx.slots.register(
-          {
-            name: "settings.section",
-            id: "dsh-skills-manager",
-            order: 11,
-            // 声明 locale 命名空间：宿主据此注入 t prop（引用随语言切换而变 → 自动重渲染）
-            locale: LOCALE_NS,
-            label: () => tr(boundT, "section.title"),
-          },
-          Panel,
-        ),
-      );
-    }
-
 // dsh-skills-manager client 半边。
 //
-// 职责（单文件）：设置页「模型」下方的「技能」分区（settings.section order 11）——
+// 职责（单文件）：侧边栏导航「技能」独立面板（sidebar.panellist + main keyed）——
 //   作用域下拉（用户·本机 / 各工作区）+ 技能计数 + 搜索框；
 //   「已安装」分组（可管理：模型调用开关、删除、打开目录）+ 「内置」只读分组；
 //   技能详情弹窗（描述 / SKILL.md 正文 Markdown / 范围 / 状态 / 文件路径）；
@@ -68,6 +33,12 @@ window.__ModuleLoader__.load({
     //   卡片 12px 圆角无描边、行高 65px/内距 12px 16px、图标块 36px/12px 圆角、
     //   名称 14px/400、描述 12px 60%、开关 32x18（开=前景色轨 + 背景色钮）。
     const CSS = [
+      // —— 主面板页骨架 ——
+      // main 槽位不给页头、内边距与滚动，页面自持（与官方「自动化任务」页一致）。
+      ".dsm-page{display:flex;flex-direction:column;width:100%;height:100%;min-height:0;background:var(--dsw-alias-bg-base,transparent)}",
+      ".dsm-pageScroll{flex:1;min-height:0;overflow:auto;scrollbar-gutter:stable}",
+      ".dsm-pageContent{max-width:960px;margin:0 auto;padding:28px clamp(24px,4vw,48px) 0}",
+      "[data-platform=darwin] .dsm-pageContent{padding-top:calc(28px + var(--dsh-frame-top-clearance,0px))}",
       ".dsm-root{display:flex;flex-direction:column;gap:32px;min-width:0;max-width:896px;margin:0 auto;padding-bottom:40px;color:var(--dsw-alias-label-primary);font-size:14px}",
       ".dsm-title{font-size:30px;font-weight:600;letter-spacing:-.75px;line-height:36px;margin:0}",
       // —— 顶部工具条 ——
@@ -451,7 +422,7 @@ window.__ModuleLoader__.load({
     /* 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale                */
     /*                                                                      */
     /* 用法与 dsh-usage-stats 一致：                                            */
-    /*   ctx.locale.register(ns, {zh, en}) 注册字典；分区注册项声明 locale: ns 后，  */
+    /*   ctx.locale.register(ns, {zh, en}) 注册字典；组件注册项声明 locale: ns 后，  */
     /*   宿主注入 t prop（引用随语言切换而变 → React 自动重渲染，无需刷新页面）。   */
     /*   字典内联在此：client 半走 __ModuleLoader__ 的工厂格式，不支持相对路径     */
     /*   require——单文件自包含是硬约束。                                          */
@@ -824,7 +795,7 @@ window.__ModuleLoader__.load({
         if (ref.current) ref.current.focus();
         const onKey = (event) => {
           if (event.key !== "Escape") return;
-          // 只关自己：别把宿主设置面板一起关掉。
+          // 只关自己：别让宿主的 Escape 处理（关面板、关侧栏）一起触发。
           event.stopPropagation();
           props.onClose();
         };
@@ -1261,6 +1232,38 @@ window.__ModuleLoader__.load({
     /* 主面板                                                            */
     /* ---------------------------------------------------------------- */
 
+    /**
+     * 侧边栏导航行与主面板共用同一个 id：宿主按侧边栏条目 id 寻址 `main` keyed slot 的组件。
+     * 排在「插件」(0)、「自动化任务」(10)、「使用统计」(20) 之后，「更多」之前。
+     */
+    const PANEL_ID = "skills-manager";
+    const PANEL_ORDER = 30;
+
+    /** 侧边栏导航行图标：装饰性 16px 线性图标，尺寸由宿主按展开/收起给 16/18。 */
+    function PanelIcon(props) {
+      const size = typeof props.size === "number" && props.size > 0 ? props.size : 16;
+      return h("svg", {
+        width: size, height: size, viewBox: "0 0 16 16", fill: "none",
+        "aria-hidden": "true", focusable: "false",
+      },
+        // 摊开的书：技能都落在 SKILL.md 上，也比「插件」行的图形更容易区分。
+        h("path", {
+          d: "M8 4.7C6.95 3.85 5.5 3.4 3.1 3.4v7.95c2.4 0 3.85.45 4.9 1.3 1.05-.85 2.5-1.3 4.9-1.3V3.4C10.5 3.4 9.05 3.85 8 4.7Z",
+          stroke: "currentColor", strokeWidth: 1.6, strokeLinejoin: "round",
+        }),
+        h("path", { d: "M8 4.7v7.95", stroke: "currentColor", strokeWidth: 1.6, strokeLinecap: "round" }),
+      );
+    }
+
+    /** 页面骨架：主面板铺满内容列，滚动交给内层，内容列限宽居中。 */
+    function PanelPage(props) {
+      return h("div", { className: "dsm-page" },
+        h("div", { className: "dsm-pageScroll" },
+          h("div", { className: "dsm-pageContent" }, h(Panel, props)),
+        ),
+      );
+    }
+
     const WRITABLE_ROOT_KINDS = new Set(["global", "project", "custom"]);
 
     function Panel(props) {
@@ -1563,7 +1566,7 @@ window.__ModuleLoader__.load({
     function apply(ctx) {
       ensureStyles();
       if (ctx === null || typeof ctx !== "object" || !ctx.slots) {
-        console.warn("[dsh-skills-manager] 宿主未提供 slots，设置分区未注册。");
+        console.warn("[dsh-skills-manager] 宿主未提供 slots，技能面板未注册。");
         return;
       }
       // 国际化：宿主 @deepseek-ai/dsh-client-locale 提供 ctx.locale。
@@ -1574,23 +1577,35 @@ window.__ModuleLoader__.load({
           () => ctx.locale.register(LOCALE_NS, LOCALE_DICT),
           "dsh-skills-manager: locale dictionary",
         );
-        // 绑定函数引用稳定，但每次调用读**当前**语言——分区 label 用它即可跟随切换
+        // 绑定函数引用稳定，但每次调用读**当前**语言——导航 label 用它即可跟随切换
         boundT = ctx.locale.bind(LOCALE_NS);
         currentT = boundT;
       } else {
-        console.warn("[dsh-skills-manager] 宿主未提供 locale，分区保持中文。");
+        console.warn("[dsh-skills-manager] 宿主未提供 locale，面板保持中文。");
       }
-      ctx.slots.inject("settings.section", () =>
+      // 主面板内容：keyed slot 按侧边栏条目 id 寻址；缺了它，点导航行会抛错并保留当前面板。
+      ctx.slots.inject("main", () =>
         ctx.slots.register(
           {
-            name: "settings.section",
-            id: "dsh-skills-manager",
-            order: 11,
+            name: "main",
+            key: PANEL_ID,
             // 声明 locale 命名空间：宿主据此注入 t prop（引用随语言切换而变 → 自动重渲染）
+            locale: LOCALE_NS,
+          },
+          PanelPage,
+        ),
+      );
+      // 侧边栏导航行：list slot，图标与 label 由宿主渲染，选中态/收起提示由宿主处理。
+      ctx.slots.inject("sidebar.panellist", () =>
+        ctx.slots.register(
+          {
+            name: "sidebar.panellist",
+            id: PANEL_ID,
+            order: PANEL_ORDER,
             locale: LOCALE_NS,
             label: () => tr(boundT, "section.title"),
           },
-          Panel,
+          PanelIcon,
         ),
       );
     }
