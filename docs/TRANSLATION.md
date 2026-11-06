@@ -4,7 +4,7 @@
 技能 `name` 保持原样（它是标识符，翻译后就没法按名字调用了）。
 
 本文只讲翻译这一块：谁负责什么、请求怎么走、状态怎么收敛，以及几条不能越过的取舍。
-整体面板与其余功能的记录见 [设计与验证.md](./设计与验证.md)。
+整体面板与其余功能的记录见 [DESIGN-AND-VERIFICATION.md](./DESIGN-AND-VERIFICATION.md)。
 
 ## 1. 一句结论
 
@@ -273,7 +273,7 @@ showTranslated = translateOn && !showOriginal && !translating && !translateError
 | 隔离实例实机 | `web` profile + patch 注入 translator / cot-translation / 本插件，1440×900 |
 | 翻译效果 | 英文技能的描述与正文均译为中文，`name` 保持英文，Markdown 结构保留 |
 | 对照开关 | 「看原文」切回英文，链接变「看译文」；标题栏「翻译」按钮可整体关闭 |
-| 截图 | [docs/images/11-技能详情翻译.png](images/11-技能详情翻译.png) |
+| 截图 | [docs/images/11-skill-detail-translation.png](images/11-skill-detail-translation.png) |
 
 未复验：`translator-unavailable` 的降级路径需要在**未启用**该 bundle 的 profile 里跑，
 验证实例显式注入了该 bundle。

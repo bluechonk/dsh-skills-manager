@@ -63,7 +63,7 @@
 
 - 新增 3 项分块单测（长文本切块、短文本/空文本、单段超长硬切），共 70 项全绿。
 - 隔离实例（web profile + 官方 bundle 的 patch 行）实机：英文技能的描述与正文均译为中文，
-  `name` 保持英文，「看原文」可切回；见 `docs/images/11-技能详情翻译.png`。
+  `name` 保持英文，「看原文」可切回；见 `docs/images/11-skill-detail-translation.png`。
 
 ## 0.1.4
 
@@ -195,7 +195,7 @@
 
 ### 验证
 
-运行时双向切换实拍（`docs/images/07-英文界面.png`、`09-切回中文.png`）；英文详情弹窗 `docs/images/08-英文详情弹窗.png`；i18n 单测覆盖词典键一致、无空文案、占位符插值、兜底翻译器，**单测共 61 项全绿**。
+运行时双向切换实拍（`docs/images/07-english-ui.png`、`09-back-to-chinese.png`）；英文详情弹窗 `docs/images/08-english-detail-dialog.png`；i18n 单测覆盖词典键一致、无空文案、占位符插值、兜底翻译器，**单测共 61 项全绿**。
 
 ## 1.0.3
 

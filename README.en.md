@@ -4,11 +4,11 @@
 
 A DeepSeek Harness plugin that adds a **Skills** panel to the sidebar, alongside **Plugins**, **Automations** and **Usage**, so every skill the Harness has actually loaded can be inspected and managed in one place — the global `~/.dsh/skills` and `~/.agents/skills` roots, plus project and workspace roots.
 
-![Skills panel in the sidebar](docs/images/01-侧边栏技能面板.png)
+![Skills panel in the sidebar](docs/images/01-sidebar-skills-panel.png)
 
 Clicking the row opens the full panel (scope switching, search, enable switches, detail dialog, import and create):
 
-![Skills panel](docs/images/10-技能主面板.png)
+![Skills panel](docs/images/10-skills-main-panel.png)
 
 The plugin UI follows the host's language setting: switch it under "Settings → General → Language" and **no page reload is needed** — every label, button and message in this panel switches immediately. The implementation uses the host's official i18n mechanism (`@deepseek-ai/dsh-client-locale`): the dictionary is registered with `ctx.locale.register` and the component registration declares its `locale` namespace, so the `t` reference the host injects changes with the language.
 
@@ -39,41 +39,41 @@ Package name, loader row id and client module id all use the `@bluechonk` scope;
 | Detail dialog | Title + a "Skill" badge; description (the frontmatter `description`, rendered as Markdown); **file content** (the SKILL.md body, rendered as Markdown in a scrollable card, matching the Codex skill page); scope (Personal / project name / Built-in), status (Enabled / Disabled), and the file path (inline monospace path + copy icon) |
 | Translation | On by default in the detail dialog: the **description and body** are translated into Chinese (the skill name is an identifier and is never translated), keeping Markdown structure and code blocks. Use "View original" to compare, or the "Translate" button in the title bar to turn it off. It reuses the host's `translator` service (the same Bing/Google channel as the reasoning translation); when `dsh-experimental-cot-translation-bundle` is not enabled it reports unavailability and falls back to the original text |
 
-![Skill detail dialog](docs/images/02-技能详情弹窗.png)
+![Skill detail dialog](docs/images/02-skill-detail-dialog.png)
 
 The same dialog translated (description and body in Chinese, switchable back to the original):
 
-![Translated skill detail](docs/images/11-技能详情翻译.png)
+![Translated skill detail](docs/images/11-skill-detail-translation.png)
 
 More menu and import dialog:
 
-![More menu](docs/images/03-更多菜单.png)
+![More menu](docs/images/03-more-menu.png)
 
-![Import external agent skills](docs/images/04-导入外部Agent技能.png)
+![Import external agent skills](docs/images/04-import-external-agent-skills.png)
 
 Scope dropdown:
 
-![Scope dropdown](docs/images/05-作用域下拉.png)
+![Scope dropdown](docs/images/05-scope-dropdown.png)
 
 Light theme (same layout, both themes checked):
 
-![Light theme](docs/images/06-浅色主题.png)
+![Light theme](docs/images/06-light-theme.png)
 
 English UI (the plugin follows the Harness language automatically):
 
-![English UI](docs/images/07-英文界面.png)
+![English UI](docs/images/07-english-ui.png)
 
-![English detail dialog](docs/images/08-英文详情弹窗.png)
+![English detail dialog](docs/images/08-english-detail-dialog.png)
 
 Back to Chinese (same page, no reload):
 
-![Back to Chinese](docs/images/09-切回中文.png)
+![Back to Chinese](docs/images/09-back-to-chinese.png)
 
 ## Design baseline
 
 The interface is aligned with the **ZCode** "Settings → Skills" page: 30px/600 title, 896px centered content column, 12px borderless cards, 65px rows, 36px icon tiles, a 32×18 switch (on = foreground track with background thumb), and a 36px/12px/256px search field.
 
-The measured values and the item-by-item comparison live in chapter 6 of [docs/设计与验证.md](docs/设计与验证.md); the ZCode reference captures are in [docs/reference/](docs/reference/).
+The measured values and the item-by-item comparison live in chapter 6 of [docs/DESIGN-AND-VERIFICATION.md](docs/DESIGN-AND-VERIFICATION.md); the ZCode reference captures are in [docs/reference/](docs/reference/).
 
 ## Skill roots covered
 
@@ -195,7 +195,7 @@ npm test          # node:test unit tests (58 cases: frontmatter / roots / discov
 npm run check     # syntax check (lib and client)
 ```
 
-Design and verification details are in [docs/设计与验证.md](docs/设计与验证.md) (including the code review record); version history is in [CHANGELOG.md](CHANGELOG.md).
+Design and verification details are in [docs/DESIGN-AND-VERIFICATION.md](docs/DESIGN-AND-VERIFICATION.md) (including the code review record); version history is in [CHANGELOG.md](CHANGELOG.md).
 
 ## Repository
 
