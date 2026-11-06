@@ -198,7 +198,8 @@ npm run check     # 语法检查（lib 与 client）
 推送前有门禁：`.githooks/pre-push` 会在 WSL（Ubuntu）里跑与 CI 等价的 `npm run check && npm test`，
 不通过就中止推送（换机器克隆后需 `git config core.hooksPath .githooks` 重新启用）。
 
-设计与验证细节见 [docs/设计与验证.md](docs/设计与验证.md)（含代码评审与修复记录），版本变更见 [CHANGELOG.md](CHANGELOG.md)。
+设计与验证细节见 [docs/设计与验证.md](docs/设计与验证.md)（含代码评审与修复记录），
+翻译功能的核心实现与设计理念见 [docs/TRANSLATION.md](docs/TRANSLATION.md)，版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 版本
 
