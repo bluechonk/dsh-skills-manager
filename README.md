@@ -6,11 +6,11 @@ DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与�
 
 界面跟随宿主语言设置：在「设置 → 通用设置 → 语言」里切换，**不用刷新页面**，本面板所有文案（标题、按钮、提示、报错）立刻跟着变。实现走宿主官方 i18n 机制 `@deepseek-ai/dsh-client-locale`：`ctx.locale.register` 注册字典 + 组件注册项声明 `locale` 命名空间，宿主注入的 `t` 引用随语言切换而变。
 
-![侧边栏技能面板](docs/images/01-侧边栏技能面板.png)
+![侧边栏技能面板](docs/images/01-sidebar-skills-panel.png)
 
 点开导航行后是完整面板（作用域切换、搜索、启停开关、详情弹窗、导入外部技能）：
 
-![技能主面板](docs/images/10-技能主面板.png)
+![技能主面板](docs/images/10-skills-main-panel.png)
 
 ## 插件标识
 
@@ -39,40 +39,40 @@ DeepSeek Harness 插件：在**侧边栏**新增「技能」独立面板（与�
 | 详情弹窗 | 标题 +「Skill」徽章；描述（frontmatter 的 `description`，Markdown 渲染）；**文件内容**（SKILL.md 正文，Markdown 渲染的滚动卡片，形态对齐 Codex 技能页）；范围（个人 / 项目名 / 内置）、状态（已启用 / 已禁用）、文件路径（行内等宽路径 + 复制图标） |
 | 翻译 | 详情弹窗默认开启翻译：**描述与正文**自动译成中文（技能名是标识符，不翻译），Markdown 结构与代码块保留；可点「看原文」对照，也可用标题栏的「翻译」按钮整体关掉。复用宿主的 `translator` 服务（与「思考过程机器翻译」同一套 Bing/Google 通道），未启用 `dsh-experimental-cot-translation-bundle` 时提示不可用并退回原文 |
 
-![技能详情弹窗](docs/images/02-技能详情弹窗.png)
+![技能详情弹窗](docs/images/02-skill-detail-dialog.png)
 
 翻译后的详情弹窗（描述与正文均为中文，可切回原文）：
 
-![技能详情翻译](docs/images/11-技能详情翻译.png)
+![技能详情翻译](docs/images/11-skill-detail-translation.png)
 
 更多菜单与导入弹窗：
 
-![更多菜单](docs/images/03-更多菜单.png)
+![更多菜单](docs/images/03-more-menu.png)
 
-![导入外部 Agent 技能](docs/images/04-导入外部Agent技能.png)
+![导入外部 Agent 技能](docs/images/04-import-external-agent-skills.png)
 
 作用域下拉：
 
-![作用域下拉](docs/images/05-作用域下拉.png)
+![作用域下拉](docs/images/05-scope-dropdown.png)
 
 浅色主题（同一套布局，深浅两版都已核对）：
 
-![浅色主题](docs/images/06-浅色主题.png)
+![浅色主题](docs/images/06-light-theme.png)
 
 英文界面（DSH 切成英文时自动跟随）：
 
-![英文界面](docs/images/07-英文界面.png)
+![英文界面](docs/images/07-english-ui.png)
 
-![英文详情弹窗](docs/images/08-英文详情弹窗.png)
+![英文详情弹窗](docs/images/08-english-detail-dialog.png)
 
 切回中文（同一页面，无需刷新）：
 
-![切回中文](docs/images/09-切回中文.png)
+![切回中文](docs/images/09-back-to-chinese.png)
 
 ## 设计基准
 
 界面按本机 **ZCode**「设置 → 技能」页对齐：标题 30px/600、内容列 896px 居中、卡片 12px 无描边、行高 65px、图标块 36px、开关 32×18（开=前景色轨 + 背景色钮）、搜索框 36px/12px/256px。
-实测参数与逐项对照见 [docs/设计与验证.md](docs/设计与验证.md) 第六章，ZCode 取材截图见 [docs/reference/](docs/reference/)。
+实测参数与逐项对照见 [docs/DESIGN-AND-VERIFICATION.md](docs/DESIGN-AND-VERIFICATION.md) 第六章，ZCode 取材截图见 [docs/reference/](docs/reference/)。
 
 ## 覆盖的技能根
 
@@ -198,7 +198,7 @@ npm run check     # 语法检查（lib 与 client）
 推送前有门禁：`.githooks/pre-push` 会在 WSL（Ubuntu）里跑与 CI 等价的 `npm run check && npm test`，
 不通过就中止推送（换机器克隆后需 `git config core.hooksPath .githooks` 重新启用）。
 
-设计与验证细节见 [docs/设计与验证.md](docs/设计与验证.md)（含代码评审与修复记录），
+设计与验证细节见 [docs/DESIGN-AND-VERIFICATION.md](docs/DESIGN-AND-VERIFICATION.md)（含代码评审与修复记录），
 翻译功能的核心实现与设计理念见 [docs/TRANSLATION.md](docs/TRANSLATION.md)，版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
 ## 版本
