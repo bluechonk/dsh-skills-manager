@@ -205,19 +205,14 @@ npm run check     # 语法检查（lib 与 client）
 
 | 版本 | 标签 | 要点 |
 |---|---|---|
-| 0.1.7 | `v0.1.7` | 移除「新建」；导入补 ZCode 来源；修好技能启停（同时写 `user-invocable`） |
-| 0.1.6 | `v0.1.6` | 修复插件图标不显示（补 manifest 的 `icon` 声明） |
-| 0.1.5 | `v0.1.5` | 技能详情机器翻译（描述 + 正文，默认开启，复用宿主 translator 服务） |
-| 0.1.4 | `v0.1.4` | 从设置页分区改为侧边栏独立面板（`sidebar.panellist` + `main`），与「插件」「自动化任务」「使用统计」同级 |
-| 0.1.3 | `v0.1.3` | 写操作后立即清扫描缓存，新技能立刻可见；全局扫描缓存 5 秒 |
-| 0.1.2 | `v0.1.2` | 描述 / 启停开关 / 导入外部 Agent 技能三处补成真能用（按 DSH 的加载规则诊断与归一化） |
-| 0.1.1 | `v0.1.1` | 界面国际化（跟随宿主语言）、工作区作用域互斥、支持从 GitHub 链接安装、插件市场索引 |
-| 0.1.0 | `v0.1.0` | 首个可用版本：技能列表、作用域切换、Markdown 详情、启停与删除 |
+| 0.1.0 | `v0.1.0` | 首个版本：侧边栏「技能」面板，作用域切换、搜索、Markdown 详情与机器翻译、启停、导入、删除 |
+
+发版节奏：一批用户可见的改动发一个版本，不随单次提交发版。详单见 [CHANGELOG.md](CHANGELOG.md)。
 
 装指定版本：
 
 ```bash
-plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.7"
+plugin_manager install_bundle --target "https://github.com/bluechonk/dsh-skills-manager#v0.1.0"
 ```
 
 ## 仓库

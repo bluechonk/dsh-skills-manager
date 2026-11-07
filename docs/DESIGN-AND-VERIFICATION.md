@@ -22,7 +22,7 @@
 
 ## 二、关键调研结论（决定了架构）
 
-1. **入口位置（0.1.4 起）**：侧边栏导航行注册在 `sidebar.panellist`（注册项 `{id, order, label}`），页面注册在 `main` keyed slot（`key` 与导航行 id 相同，宿主按条目 id 派发）。本插件取 **order 30**，排在「插件」(0) /「自动化任务」(10) /「使用统计」(20) 之后。此前（0.1.0–0.1.3）曾用 `settings.section` order 11（「模型」下方），已被本次迁移取代。
+1. **入口位置**：侧边栏导航行注册在 `sidebar.panellist`（注册项 `{id, order, label}`），页面注册在 `main` keyed slot（`key` 与导航行 id 相同，宿主按条目 id 派发）。本插件取 **order 30**，排在「插件」(0) /「自动化任务」(10) /「使用统计」(20) 之后。早期版本曾用 `settings.section` order 11（「模型」下方），已由本次迁移取代。
 2. **技能注册表**：`ctx.skills` 提供 `list({cwd, scope})` / `snapshot()` / `get(name)`；摘要含 `name/description/whenToUse/path/source/provider/invocation/resourceBase`。
 3. **作用域陷阱**：桌面端 bundle（`dsh-web-app/cordis.patch.yml`）在宿主面**禁用**了 `skill-filesystem`，文件系统技能注册在各 agent preset 的层里。因此宿主必须带着「查看者作用域」读取，否则只看得到宿主全局层。实现采用：活跃 agent 作用域 + 各 preset 作用域（`agentPresets.acquireScope`）并集，再与本地根扫描合并。
 4. **会话 Remote 不可用**：`ctx.remote.skills.list` 需要 sessionId，设置页没有会话，故改为宿主自建同源路由（形态参考同机已装的 `dsh-usage-stats` 与社区 `dsh-skill-panel`）。
@@ -73,13 +73,13 @@ node --test "test/**/*.test.mjs"                                             →
 
 ### 4.3 界面实机验证
 
-在独立验证实例（`dsh --profile web --port 39181`）上用 agent-browser 实测并截图（`01` 与 `10` 摄于 0.1.4 的
+在独立验证实例（`dsh --profile web --port 39181`）上用 agent-browser 实测并截图（`01` 与 `10` 摄于
 桌面端实机，面板主体与其余截图一致）：
 
 | 截图 | 验证点 |
 |---|---|
 | `01-sidebar-skills-panel.png` | 「技能」位于「使用统计」与「更多」之间，选中态高亮；点开后主面板显示标题、作用域下拉、「技能 N」、搜索与「已安装 N」列表 |
-| `10-skills-main-panel.png` | 0.1.4 桌面端实拍：点开「技能」后的完整主面板（标题、作用域下拉、「技能 N」、搜索、「已安装 N」列表与行内开关/删除） |
+| `10-skills-main-panel.png` | 桌面端实拍：点开「技能」后的完整主面板（标题、作用域下拉、「技能 N」、搜索、「已安装 N」列表与行内开关/删除） |
 | `02-skill-detail-dialog.png` | 四段结构：描述（仅描述正文，Markdown 渲染，独立滚动）、范围（个人）、状态（已启用）、文件路径（行内等宽路径 + 复制图标）；无「正文」「文件清单」 |
 | `03-more-menu.png` | 更多菜单弹出「导入」 |
 | `04-import-external-agent-skills.png` | 全局/项目切换、刷新、全选与已选计数、外部目录清单、软链/直接复制、导入到全局 |
@@ -285,7 +285,7 @@ ctx.slots.register({ name: "main", key: "skills-manager", locale: LOCALE_NS }, P
 | 列表行 | 不合规技能标「DSH 不加载」、开关置灰；已停用技能标「已停用」 |
 | 单测 | 新增 5 项（诊断 / 派生描述 / 归一化 / 无 frontmatter 补段 / 旧键清理），共 66 项全绿 |
 
-## 十、入口迁移到侧边栏（0.1.4，2026-11-03）
+## 十、入口迁移到侧边栏（2026-11-03）
 
 ### 10.1 动机与结论
 
@@ -304,15 +304,15 @@ ctx.slots.register({ name: "main", key: "skills-manager", locale: LOCALE_NS }, P
 |---|---|
 | `npm run check` | 通过（lib 三文件 + client） |
 | `npm test` | 67 项全绿 |
-| 安装 | `plugin_manager install_bundle`（本地目录）→ `application: applied`，0.1.4，无警告 |
+| 安装 | `plugin_manager install_bundle`（本地目录）→ `application: applied`，无警告 |
 | 桌面端实机（desktop profile） | `dsh-client-hmr` 热替换后**未刷新页面**，侧边栏即出现「技能」（使用统计与更多之间）；点击后主面板渲染标题、作用域下拉、「技能 49」、搜索与「已安装 40」列表，开关与删除按钮齐全 |
 | 截图 | [docs/images/01-sidebar-skills-panel.png](images/01-sidebar-skills-panel.png)、[10-skills-main-panel.png](images/10-skills-main-panel.png) |
-| 全套截图重拍 | 0.1.4 在独立验证实例（`web` profile，`dsh --profile web --patch …`，与日常 profile 隔离）上重拍 01–09：主面板、详情弹窗、更多菜单、导入弹窗、作用域下拉、浅色主题、英文界面、英文详情、切回中文，全部为新侧边栏语境（1440×900） |
+| 全套截图重拍 | 在独立验证实例（`web` profile，`dsh --profile web --patch …`，与日常 profile 隔离）上重拍 01–09：主面板、详情弹窗、更多菜单、导入弹窗、作用域下拉、浅色主题、英文界面、英文详情、切回中文，全部为新侧边栏语境（1440×900） |
 
 未复验项：侧边栏收起态（本次未改 `sidebar.panellist` 的通用渲染，收起由宿主负责）。
 浅色主题与英文界面已在重拍中复验：插件配色随主题、文案随语言，均无需刷新页面。
 
-## 十一、技能详情机器翻译（0.1.5，2026-11-03）
+## 十一、技能详情机器翻译（2026-11-03）
 
 > 这一块的核心实现与设计理念单独成文：[TRANSLATION.md](./TRANSLATION.md)。本节只记需求、结论与验证。
 
@@ -349,7 +349,7 @@ ctx.slots.register({ name: "main", key: "skills-manager", locale: LOCALE_NS }, P
 未复验：`translator-unavailable` 的降级提示（需要在未启用该 bundle 的 profile 里跑，
 本次验证实例显式注入了该 bundle）。
 
-## 十二、去掉新建、导入补 ZCode、修好启停（0.1.7，2026-11-03）
+## 十二、去掉新建、导入补 ZCode、修好启停（2026-11-03）
 
 ### 12.1 三处改动
 
